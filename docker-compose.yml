@@ -1,0 +1,60 @@
+services:
+  lager:
+    build: .
+    container_name: lager
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+      - /run:rw,noexec,nosuid,size=16m
+    user: "1000:1000"
+    ports:
+      - "127.0.0.1:8095:8000"
+    volumes:
+      - lager-data:/app/data
+    env_file:
+      # host-kanonische Secrets (z. B. MARKTWATCH_API_KEY); fehlt lokal → kein Fehler
+      - path: .env
+        required: false
+    environment:
+      - DATABASE_URL=sqlite:////app/data/app.db
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    memswap_limit: 256m   # == deploy-Limit → Swap aus, sauberer OOM statt Host-Thrashing
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: "0.5"
+    networks:
+      - cc-core
+      - cc-apps
+
+volumes:
+  lager-data:
+
+# ★ Die Netze sind hier bewusst LOKAL definiert, nicht `external: true`.
+#
+# Bis 2026-09-06 war es andersherum, und damit lief dieses Compose nur an genau
+# einem Ort: einem Wirt, auf dem vorher jemand `cc-core` und `cc-apps` angelegt
+# hatte. Wer das Repo klonte und `docker compose up` tippte, bekam einen Fehler
+# ueber ein fehlendes Netz und keinen Hinweis, woher es kommen soll.
+#
+# Der Auslieferungszustand ist deshalb jetzt „laeuft ueberall", und der
+# Sonderfall traegt eine eigene Datei: `docker-compose.homelab.yml` zieht
+# dieselben Netze auf `external: true` zurueck. Im Homelab wird sie ueber
+# COMPOSE_FILE in der .env automatisch mitgeladen, es muss niemand `-f` tippen.
+#
+# Die Namen bleiben, obwohl eigenstaendig nur zwei leere Bruecken entstehen: in
+# der Suite verschmelzen die gleichnamigen Netze der Teile zu einem gemeinsamen,
+# und die Trennung core/apps ist die Segmentierung, nicht Schmuck.
+networks:
+  cc-core:
+  cc-apps:
