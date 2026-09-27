@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { api, fehlertext } from '../api';
 import type { ProductOut, ProductCreate, ProductUpdate, Page } from '../types';
 import LoadError from '../components/LoadError';
+import Icon from '../components/Icon';
 
 const CATEGORIES = [
   'Alle', 'Getreide', 'Milchprodukte', 'Fleisch', 'Gemüse', 'Obst',
@@ -265,8 +266,10 @@ export default function ProduktePage() {
         <LoadError was="Die Produktliste" fehler={loadError} onRetry={loadProducts} />
       ) : products.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">{'\u{1F50D}'}</div>
-          <div className="empty-state-text">Keine Produkte gefunden</div>
+          <div className="empty-state-icon"><Icon name="lupe" /></div>
+          <div className="empty-state-text">
+            Kein Produkt passt zur Suche. Ein anderer Begriff oder ein neues Produkt anlegen.
+          </div>
         </div>
       ) : (
         products.map((p) => (

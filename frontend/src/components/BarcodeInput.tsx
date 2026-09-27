@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { api, fehlertext } from '../api';
 import type { BarcodeResult } from '../types';
+import Icon from './Icon';
 
 interface Props {
   onResult: (result: BarcodeResult) => void;
@@ -95,11 +96,12 @@ export default function BarcodeInput({ onResult, onError }: Props) {
       {mode === 'idle' && !looking && (
         <div className="barcode-buttons">
           <button type="button" className="btn btn-sm btn-secondary" onClick={handleScanClick}>
-            {canUseCamera() ? '\u{1F4F7} Barcode scannen' : '\u{1F50D} Barcode eingeben'}
+            <Icon name={canUseCamera() ? 'kamera' : 'lupe'} className="knopf-icon" />
+            {canUseCamera() ? 'Barcode scannen' : 'Barcode eingeben'}
           </button>
           {canUseCamera() && (
             <button type="button" className="btn btn-sm btn-secondary" onClick={() => setMode('manual')}>
-              ⌨ Manuell
+              Manuell eingeben
             </button>
           )}
         </div>

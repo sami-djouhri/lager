@@ -4,6 +4,7 @@ import { api, fehlertext } from '../api';
 import type { ShoppingSuggestionOut } from '../types';
 import MealPlanModal from '../components/MealPlanModal';
 import LoadError from '../components/LoadError';
+import Icon from '../components/Icon';
 
 type Reason = 'low_stock' | 'weekly_average' | 'expiring_soon';
 
@@ -63,7 +64,7 @@ export default function EinkaufslistePage() {
           className="quick-action"
           onClick={() => setShowMealPlan(true)}
         >
-          <span className="action-icon">{'\u{1F37D}'}</span>
+          <span className="action-icon"><Icon name="teller" /></span>
           Aus Rezept
         </button>
         <button
@@ -72,7 +73,7 @@ export default function EinkaufslistePage() {
           onClick={load}
           disabled={loading}
         >
-          <span className="action-icon">{'↻'}</span>
+          <span className="action-icon"><Icon name="erneuern" /></span>
           Aktualisieren
         </button>
       </div>
@@ -83,8 +84,8 @@ export default function EinkaufslistePage() {
         <LoadError was="Die Einkaufsliste" fehler={error} onRetry={load} />
       ) : items.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">{'\u{1F6D2}'}</div>
-          <div className="empty-state-text">Keine Vorschläge: Bestand sieht gut aus</div>
+          <div className="empty-state-icon"><Icon name="wagen" /></div>
+          <div className="empty-state-text">Nichts nachzukaufen. Der Bestand deckt alle Mindestmengen.</div>
         </div>
       ) : (
         (Object.keys(grouped) as Reason[]).map((reason) =>

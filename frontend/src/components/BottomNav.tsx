@@ -1,12 +1,16 @@
 import { NavLink } from 'react-router-dom';
+import Icon, { type IconName } from './Icon';
 
-const tabs = [
-  { to: '/', icon: '\u2302', label: 'Start' },
-  { to: '/bestand', icon: '\u{1F4E6}', label: 'Bestand' },
-  { to: '/einkaufsliste', icon: '\u{1F6D2}', label: 'Einkauf' },
-  { to: '/einbuchen', icon: '\u2795', label: 'Einbuchen' },
-  { to: '/produkte', icon: '\u{1F50D}', label: 'Produkte' },
-  { to: '/wertsachen', icon: '\u{1F4BB}', label: 'Wertsachen' },
+/* Sechs Reiter auf einer Handybreite sind eng. Die Beschriftung laeuft
+   deshalb schmal (font-stretch 88 in der CSS), nicht kleiner: kleiner Text
+   wird unlesbar, schmaler Text bleibt lesbar und braucht weniger Platz. */
+const tabs: { to: string; icon: IconName; label: string }[] = [
+  { to: '/', icon: 'haus', label: 'Start' },
+  { to: '/bestand', icon: 'kiste', label: 'Bestand' },
+  { to: '/einkaufsliste', icon: 'wagen', label: 'Einkauf' },
+  { to: '/einbuchen', icon: 'plus', label: 'Einbuchen' },
+  { to: '/produkte', icon: 'lupe', label: 'Produkte' },
+  { to: '/wertsachen', icon: 'geraet', label: 'Wertsachen' },
 ];
 
 export default function BottomNav() {
@@ -19,7 +23,9 @@ export default function BottomNav() {
           end={t.to === '/'}
           className={({ isActive }) => (isActive ? 'active' : '')}
         >
-          <span className="nav-icon">{t.icon}</span>
+          <span className="nav-icon">
+            <Icon name={t.icon} />
+          </span>
           {t.label}
         </NavLink>
       ))}

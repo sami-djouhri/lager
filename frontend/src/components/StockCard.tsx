@@ -1,7 +1,7 @@
 import type { StockEntryOut } from '../types';
 import ExpiryBadge from './ExpiryBadge';
+import { einheit } from '../einheiten';
 
-const UNIT_LABELS: Record<string, string> = { g: 'g', ml: 'ml', piece: 'Stk' };
 const LOC_LABELS: Record<string, string> = {
   Vorratskammer: 'Vorratskammer',
   'Kühlschrank': 'Kühlschrank',
@@ -14,7 +14,7 @@ interface Props {
 }
 
 export default function StockCard({ entry, onConsume }: Props) {
-  const unitLabel = UNIT_LABELS[entry.unit] ?? entry.unit;
+  const unitLabel = einheit(entry.unit);
   const locLabel = LOC_LABELS[entry.location] ?? entry.location;
 
   return (

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api';
 import type { ElectronicAssetOut, MarketValueUpdateOut, Page, PortfolioOut } from '../types';
+import Icon from '../components/Icon';
 
 // Wertsachen/Elektronik-Portfolio: übernimmt die saganta assets-App
 // (Super-App-Merge Phase 3): Kennzahlen, Kategorien, Verkaufsempfehlungen,
@@ -134,7 +135,7 @@ export default function WertsachenPage() {
 
       {assets.length === 0 && !error && (
         <div className="empty-state">
-          <div className="empty-state-icon">{'\u{1F4BB}'}</div>
+          <div className="empty-state-icon"><Icon name="geraet" /></div>
           <div className="empty-state-text">
             Noch keine Wertsachen erfasst. Über die Elektronik-API anlegen oder Homelab-Seed
             nutzen.
@@ -177,9 +178,10 @@ export default function WertsachenPage() {
                     className="btn btn-sm btn-secondary"
                     onClick={() => refreshMarket(a.id)}
                     disabled={refreshing === a.id}
-                    title="Marktwert via marktwatch aktualisieren"
+                    title="Marktwert neu abrufen"
+                    aria-label="Marktwert neu abrufen"
                   >
-                    {refreshing === a.id ? '…' : '⟳'}
+                    {refreshing === a.id ? '…' : <Icon name="erneuern" className="knopf-icon" />}
                   </button>
                 </div>
               </div>

@@ -4,6 +4,7 @@ import { api, fehlertext } from '../api';
 import type { StockEntryOut, Page } from '../types';
 import StockCard from '../components/StockCard';
 import LoadError from '../components/LoadError';
+import Icon from '../components/Icon';
 
 const LOCATIONS = ['Alle', 'Vorratskammer', 'Kühlschrank', 'Tiefkühler'];
 
@@ -74,8 +75,8 @@ export default function BestandPage() {
         <LoadError was="Der Bestand" fehler={error} onRetry={load} />
       ) : filtered.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">{'\u{1F50D}'}</div>
-          <div className="empty-state-text">Keine Eintr&auml;ge gefunden</div>
+          <div className="empty-state-icon"><Icon name="kiste" /></div>
+          <div className="empty-state-text">Kein Eintrag passt zu den Filtern.</div>
         </div>
       ) : (
         filtered.map((e) => (
