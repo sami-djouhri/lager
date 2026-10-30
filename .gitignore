@@ -1,0 +1,52 @@
+# Secrets
+.env
+.env.*
+secrets.yaml
+secrets/
+
+# SSL
+ssl/
+*.key
+*.pem
+
+# Data
+*.db
+*.sqlite
+*.sqlite3
+data/
+db-data/
+
+# Node
+node_modules/
+
+# Zwischenprodukt von `npm run gen:types`, wird zur Bauzeit nicht gebraucht.
+frontend/openapi.json
+
+# frontend/src/types.generated.ts ist BEWUSST versioniert und steht deshalb
+# nicht hier. Sie ist erzeugt, aber zugleich Bau-Eingabe: das Dockerfile macht
+# `COPY frontend/` und danach `npm run build`, ohne den Generator aufzurufen.
+# Ignoriert war sie aus einem frischen Klon nicht baubar (TS2307, gemessen
+# 2026-09-06 auf einem Wirt ohne diesen Arbeitsbaum). Dass sie aktuell bleibt,
+# prueft `scripts/pruefe-typdatei.sh` (laeuft am Ende von `bash run-tests.sh`).
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Docker
+volumes/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Voices (AI data)
+voices/
+
+# Zigbee
+zigbee.db
+
+*.db-shm
+*.db-wal

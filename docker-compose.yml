@@ -1,0 +1,75 @@
+services:
+  lager:
+    build: .
+    container_name: lager
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+      - /run:rw,noexec,nosuid,size=16m
+    user: "1000:1000"
+    ports:
+      - "127.0.0.1:8095:8000"
+    volumes:
+      - lager-data:/app/data
+    env_file:
+      # host-kanonische Secrets (z. B. MARKTWATCH_API_KEY); fehlt lokal → kein Fehler
+      - path: .env
+        required: false
+    environment:
+      - DATABASE_URL=sqlite:////app/data/app.db
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    memswap_limit: 256m   # == deploy-Limit → Swap aus, sauberer OOM statt Host-Thrashing
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: "0.5"
+    networks:
+      - kern-net
+      - app-net
+
+volumes:
+  lager-data:
+
+# Die Netze sind hier bewusst LOKAL definiert, nicht `external: true`.
+#
+# Bis 2026-09-06 war es andersherum, und damit lief dieses Compose nur an genau
+# einem Ort: einem Wirt, auf dem vorher jemand `cc-core` und `cc-apps` angelegt
+# hatte. Wer das Repo klonte und `docker compose up` tippte, bekam einen Fehler
+# ueber ein fehlendes Netz und keinen Hinweis, woher es kommen soll.
+#
+# Der Auslieferungszustand ist deshalb jetzt „laeuft ueberall", und der
+# Sonderfall traegt eine eigene Datei: `docker-compose.homelab.yml` zieht
+# dieselben Netze auf `external: true` zurueck. Im Homelab wird sie ueber
+# COMPOSE_FILE in der .env automatisch mitgeladen, es muss niemand `-f` tippen.
+#
+# Eigenstaendig entstehen nur zwei leere Bruecken, und sie behalten ihren Zweck:
+# in der Suite verschmelzen die gleichnamigen Netze der Teile zu einem
+# gemeinsamen, und die Trennung kern/app ist die Segmentierung, nicht Schmuck.
+#
+# Die Schluessel heissen seit dem 2026-10-06 `kern-net`/`app-net` und nicht
+# mehr wie die Zonen. Hier stand „die Namen bleiben", und das war der Fehler:
+# ohne das Homelab-Override entstand ein privates `lager_cc-core`, das wie die
+# Zone aussieht und keine ist. Ein Container darin ist fuer
+# `docker-network-watcher` unsichtbar, denn der beobachtet genau die vier
+# Zonennamen. Die Verschmelzung in der Suite traegt weiter, weil alle sechs
+# Teile und das Dach denselben Satz Namen UND dieselben Subnetze fuehren.
+# Begruendung und Vergabe: `docker/docs/SUBNETZE_BASIS_COMPOSE.md`.
+networks:
+  kern-net:
+    ipam:
+      config:
+        - subnet: 10.212.3.0/24
+  app-net:
+    ipam:
+      config:
+        - subnet: 10.212.2.0/24
