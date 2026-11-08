@@ -1,13 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api, fehlertext } from '../api';
 import type { ProductOut, ProductCreate, ProductUpdate, Page } from '../types';
 import LoadError from '../components/LoadError';
 import Icon from '../components/Icon';
-
-const CATEGORIES = [
-  'Alle', 'Getreide', 'Milchprodukte', 'Fleisch', 'Gemüse', 'Obst',
-  'Gewürze', 'Öle', 'Getränke', 'Konserven', 'Sonstiges',
-];
+import { useBereich } from '../bereich/kontext';
+import Kopf from '../bereich/Kopf';
 
 const UNITS = [
   { value: 'g', label: 'Gramm (g)' },
@@ -16,6 +13,10 @@ const UNITS = [
 ];
 
 export default function ProduktePage() {
+  const { schluessel, bereich } = useBereich();
+  // Kategorien je Bereich vom Server; eine Altkategorie, die dort nicht steht,
+  // bleibt als Chip erhalten, sonst waeren ihre Produkte nicht filterbar.
+  const vorschlaege = bereich?.kategorien ?? [];
   const [products, setProducts] = useState<ProductOut[]>([]);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('Alle');
@@ -29,7 +30,7 @@ export default function ProduktePage() {
   async function loadProducts() {
     setLoadError(null);
     try {
-      const params = new URLSearchParams({ limit: '500' });
+      const params = new URLSearchParams({ limit: '500', bereich: schluessel });
       if (category !== 'Alle') params.set('category', category);
       if (search) params.set('q', search);
       const data = await api.get<Page<ProductOut>>(`/products?${params}`);
@@ -44,12 +45,20 @@ export default function ProduktePage() {
   useEffect(() => {
     loadProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, search]);
+  }, [category, search, schluessel]);
+
+  // Das Formular steht ueber der Liste. Am Handy tippte man ein Produkt
+  // weit unten an, und das Formular oeffnete sich ausserhalb des Bildes:
+  // es sah aus, als passiere nichts.
+  const formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (editing || creating) formRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }, [editing, creating]);
 
   function startCreate() {
     setEditing(null);
     setCreating(true);
-    setForm({ name: '', default_unit: 'g', category: undefined });
+    setForm({ name: '', bereich: schluessel, default_unit: 'g', category: undefined });
   }
 
   function startEdit(p: ProductOut) {
@@ -57,6 +66,7 @@ export default function ProduktePage() {
     setEditing(p);
     setForm({
       name: p.name,
+      bereich: p.bereich,
       barcode: p.barcode,
       category: p.category,
       default_unit: p.default_unit,
@@ -115,10 +125,13 @@ export default function ProduktePage() {
   }
 
   const showForm = creating || editing;
+  const kategorien = Array.from(
+    new Set([...vorschlaege, ...products.map((p) => p.category).filter((c): c is string => !!c)]),
+  );
 
   return (
     <div className="page">
-      <h1 className="page-title">Produkte</h1>
+      <Kopf titel="Produkte" />
 
       {toast && <div className={`toast ${toast.type}`}>{toast.msg}</div>}
 
@@ -133,7 +146,7 @@ export default function ProduktePage() {
       </div>
 
       <div className="filter-chips">
-        {CATEGORIES.map((cat) => (
+        {['Alle', ...kategorien].map((cat) => (
           <button
             key={cat}
             className={`chip${category === cat ? ' active' : ''}`}
@@ -145,7 +158,7 @@ export default function ProduktePage() {
       </div>
 
       {showForm && (
-        <form className="inline-form" onSubmit={handleSave}>
+        <form ref={formRef} className="inline-form" onSubmit={handleSave}>
           <div className="inline-form-title">
             {creating ? 'Neues Produkt' : `${editing!.name} bearbeiten`}
           </div>
@@ -179,7 +192,7 @@ export default function ProduktePage() {
               onChange={(e) => setForm({ ...form, category: e.target.value || undefined })}
             >
               <option value="">-- Keine --</option>
-              {CATEGORIES.filter((c) => c !== 'Alle').map((c) => (
+              {kategorien.map((c) => (
                 <option key={c} value={c}>{c}</option>
               ))}
             </select>
@@ -273,16 +286,18 @@ export default function ProduktePage() {
         </div>
       ) : (
         products.map((p) => (
-          <div key={p.id} className="product-item" onClick={() => startEdit(p)}>
-            <div className="product-item-info">
-              <div className="product-item-name">{p.name}</div>
-              <div className="product-item-meta">
+          // Ein Knopf statt eines anklickbaren div: mit Tastatur erreichbar,
+          // und ein Bildschirmleser sagt, dass man hier bearbeiten kann.
+          <button key={p.id} type="button" className="product-item zeilenknopf" onClick={() => startEdit(p)}>
+            <span className="product-item-info">
+              <span className="product-item-name">{p.name}</span>
+              <span className="product-item-meta">
                 {p.category && <span>{p.category} &middot; </span>}
                 {p.default_unit}
                 {p.barcode && <span> &middot; {p.barcode}</span>}
-              </div>
-            </div>
-          </div>
+              </span>
+            </span>
+          </button>
         ))
       )}
 

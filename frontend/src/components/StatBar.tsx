@@ -7,7 +7,9 @@ interface Props {
 
 export default function StatBar({ label, value, max, unit = '' }: Props) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
-  const display = unit ? `${Math.round(value)} ${unit}` : String(Math.round(value));
+  // Eine Nachkommastelle, deutsch: `Math.round` machte aus 0,4 l eine 0.
+  const zahl = value.toLocaleString('de-DE', { maximumFractionDigits: 1 });
+  const display = unit ? `${zahl} ${unit}` : zahl;
 
   return (
     <div className="stat-bar-container">

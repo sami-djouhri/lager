@@ -19,9 +19,9 @@ from sqlalchemy.orm import with_loader_criteria
 
 from app.config import settings
 from app.db import SessionLocal
-from app.models import ConsumptionEvent, ElectronicAsset, Product, StockEntry
+from app.models import ConsumptionEvent, Einkauf, Platz, Product, Sache, StockEntry, Verlauf
 
-TENANT_MODELS = (Product, StockEntry, ConsumptionEvent, ElectronicAsset)
+TENANT_MODELS = (Product, StockEntry, ConsumptionEvent, Platz, Sache, Verlauf, Einkauf)
 
 
 def _session_sub(session) -> str:

@@ -1,0 +1,75 @@
+/* ERZEUGT, NICHT VON HAND AENDERN.
+ *
+ * Quelle: saganta/packages/design-tokens/src/theme.css (Pruefsumme 1144865d60d3)
+ * Werkzeug: saganta/scripts/nachtstudie-erzeugen.py --schreiben
+ *
+ * Die Nachtstudie fuer Dienste ausserhalb der Saganta-Suite. Nur dunkel
+ * (Entscheid 2026-11-02). Jede Farbe gibt es zweimal: als Hexwert zum
+ * direkten Gebrauch und als `-rgb`-Dreier fuer Transparenz, also
+ * `rgb(var(--saganta-akzent-rgb) / 0.12)`.
+ *
+ * Wer einen Ton aendern will, aendert ihn in der Quelle und schreibt neu. Eine
+ * Aenderung hier meldet der Waechter (`--pruefen`, taeglich) als Abweichung.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* Rollen, Werte aus --dunkel-* */
+  --saganta-surface: #16130f;
+  --saganta-surface-rgb: 22 19 15;
+  --saganta-surface-2: #1f1b15;
+  --saganta-surface-2-rgb: 31 27 21;
+  --saganta-text: #f3ede2;
+  --saganta-text-rgb: 243 237 226;
+  --saganta-muted: #a69b8a;
+  --saganta-muted-rgb: 166 155 138;
+  --saganta-border: #302920;
+  --saganta-border-rgb: 48 41 32;
+  --saganta-border-stark: #7c7264;
+  --saganta-border-stark-rgb: 124 114 100;
+  --saganta-focus: #dd9c3f;
+  --saganta-focus-rgb: 221 156 63;
+  --saganta-surface-hover: #292319;
+  --saganta-surface-hover-rgb: 41 35 25;
+  --saganta-surface-sunken: #110e0b;
+  --saganta-surface-sunken-rgb: 17 14 11;
+  --saganta-text-dim: #938979;
+  --saganta-text-dim-rgb: 147 137 121;
+  --saganta-erfolg: #b4cfc1;
+  --saganta-erfolg-rgb: 180 207 193;
+  --saganta-info: #96aabe;
+  --saganta-info-rgb: 150 170 190;
+  --saganta-warnung: #e3c766;
+  --saganta-warnung-rgb: 227 199 102;
+  --saganta-fehler: #e8908c;
+  --saganta-fehler-rgb: 232 144 140;
+  --saganta-akzent: #dd9c3f;
+  --saganta-akzent-rgb: 221 156 63;
+  --saganta-akzent-stark: #e5b467;
+  --saganta-akzent-stark-rgb: 229 180 103;
+  --saganta-kupfer: #c8884a;
+  --saganta-kupfer-rgb: 200 136 74;
+
+  /* Messing-Skala: als FLAECHE gedacht, als Text nur `--saganta-akzent` */
+  --saganta-messing-50: #fbf4e7;
+  --saganta-messing-100: #f6e6c8;
+  --saganta-messing-200: #eecd97;
+  --saganta-messing-300: #e5b467;
+  --saganta-messing-400: #dd9c3f;
+  --saganta-messing-500: #cf8524;
+  --saganta-messing-600: #b06b18;
+  --saganta-messing-700: #8a5216;
+  --saganta-messing-800: #693f15;
+  --saganta-messing-900: #4d2f12;
+  --saganta-auf-messing: #1b1408;
+
+  /* Bewegung */
+  --saganta-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --saganta-motion-fast: 120ms;
+  --saganta-motion-base: 200ms;
+  --saganta-motion-slow: 320ms;
+
+  /* Schrift: die Dateien legt jeder Dienst selbst ab (Inter, OFL) */
+  --saganta-schrift: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif;
+}

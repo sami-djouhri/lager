@@ -21,7 +21,7 @@ function einheit(unit: string): string {
   return UNIT_LABELS[unit] ?? unit;
 }
 
-export default function CategoryAnalytics() {
+export default function CategoryAnalytics({ bereich }: { bereich: string }) {
   const [data, setData] = useState<CategoryAnalyticsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,14 +30,16 @@ export default function CategoryAnalytics() {
     setLoading(true);
     setError(null);
     try {
-      const items = await api.get<CategoryAnalyticsItem[]>('/stats/categories?days=30');
+      const items = await api.get<CategoryAnalyticsItem[]>(
+        `/stats/categories?days=30&bereich=${encodeURIComponent(bereich)}`,
+      );
       setData(items);
     } catch (err) {
       setError(fehlertext(err));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [bereich]);
 
   useEffect(() => {
     load();
@@ -83,7 +85,7 @@ export default function CategoryAnalytics() {
                   color: wasteColor(item.waste_percent),
                 }}
               >
-                {item.waste_percent.toFixed(1)}% Verlust ({einheit(item.waste_unit)})
+                {item.waste_percent.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} % Verlust ({einheit(item.waste_unit)})
               </span>
             )}
           </div>

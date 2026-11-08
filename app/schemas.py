@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Generic, TypeVar
+from typing import Generic, Literal, TypeVar
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -59,6 +59,7 @@ def _normalise_unit_field(v: str | None) -> str | None:
 
 class ProductCreate(BaseModel):
     name: str = Field(..., max_length=200)
+    bereich: str = Field("lebensmittel", max_length=20)
     barcode: str | None = Field(None, max_length=50)
     category: str | None = Field(None, max_length=100)
     default_unit: str = Field("g", max_length=20)
@@ -85,6 +86,7 @@ class ProductCreate(BaseModel):
 
 class ProductUpdate(BaseModel):
     name: str | None = Field(None, max_length=200)
+    bereich: str | None = Field(None, max_length=20)
     barcode: str | None = Field(None, max_length=50)
     category: str | None = Field(None, max_length=100)
     default_unit: str | None = Field(None, max_length=20)
@@ -112,6 +114,7 @@ class ProductUpdate(BaseModel):
 class ProductOut(BaseModel):
     id: int
     name: str
+    bereich: str = "lebensmittel"
     barcode: str | None
     category: str | None
     default_unit: str
@@ -137,8 +140,14 @@ class StockEntryCreate(BaseModel):
     unit: str = Field("g", max_length=20)
     mhd: date | None = None
     purchase_date: date | None = None
-    location: str = Field("Vorratskammer", max_length=50)
+    # Lagerplatz; ohne beides liegt der Posten auf dem Shopfloor. `location`
+    # ist der alte Ortstext (Lager-App 0.1.0) und wird auf einen Platz gelegt,
+    # siehe `PlatzService.aus_ortstext`. `platz_id` gewinnt.
+    platz_id: int | None = None
+    location: str | None = Field(None, max_length=50)
     lot_note: str | None = Field(None, max_length=200)
+    # Was die ganze eingebuchte Menge gekostet hat, freiwillig.
+    preis: float | None = Field(None, ge=0, le=1_000_000)
 
     @model_validator(mode="before")
     @classmethod
@@ -155,9 +164,13 @@ class StockEntryUpdate(BaseModel):
     unit: str | None = Field(None, max_length=20)
     mhd: date | None = None
     purchase_date: date | None = None
+    # `platz_id: null` ausdruecklich gesetzt = zurueck auf den Shopfloor.
+    platz_id: int | None = None
     location: str | None = Field(None, max_length=50)
     lot_note: str | None = Field(None, max_length=200)
     opened_at: date | None = None
+    # `preis: null` ausdruecklich gesetzt = Preis entfernen.
+    preis: float | None = Field(None, ge=0, le=1_000_000)
 
     @model_validator(mode="before")
     @classmethod
@@ -179,9 +192,16 @@ class StockEntryOut(BaseModel):
     unit: str
     mhd: date | None
     purchase_date: date | None
+    # Name des Platzes, „nicht eingelagert" ohne Platz (alte Form, nie leer).
     location: str
+    platz_id: int | None = None
+    platz_kennung: str | None = None
+    platz_pfad: str = ""
     days_until_expiry: int | None = None
     opened_at: date | None = None
+    preis: float | None = None
+    eingangsmenge: float | None = None
+    einkauf_id: int | None = None
 
     model_config = {"from_attributes": True}
 
@@ -211,6 +231,19 @@ class ConsumeRequest(BaseModel):
 
 class ConsumeRecipeRequest(BaseModel):
     ingredients: list[ConsumeRequest]
+
+
+class AusbuchenSammelRequest(BaseModel):
+    """Mehrere Posten ganz ausbuchen (Mehrfachauswahl im Bestand).
+
+    Anders als `/consume` nennt der Aufruf Posten statt einer Menge je Produkt:
+    wer drei abgelaufene Joghurts waehlt, meint genau diese drei und nicht die
+    drei mit dem aeltesten MHD.
+    """
+
+    entry_ids: list[int] = Field(min_length=1, max_length=500)
+    reason: Literal["verbraucht", "weggeworfen", "abgelaufen"] = "abgelaufen"
+    source: str = Field("manual", max_length=50)
 
 
 class ConsumptionEventOut(BaseModel):
@@ -399,13 +432,14 @@ class ElectronicAssetCreate(BaseModel):
     model: str | None = Field(None, max_length=150)
     serial: str | None = Field(None, max_length=150)
     barcode: str | None = Field(None, max_length=50)
-    condition: str = Field("gut", max_length=50)
+    condition: str = Field("Gut", max_length=50)
     status: str = Field("aktiv", max_length=50)
-    location: str = Field("Elektronik", max_length=80)
-    usage_status: str = Field("reserve", max_length=50)
-    homelab_role: str | None = Field(None, max_length=100)
-    host_name: str | None = Field(None, max_length=100)
-    service_refs: list[str] = []
+    platz_id: int | None = None
+    # Alte Formen: Ortstext wird ein Platz, ein aktiver usage_status wird
+    # Shopfloor-Grund „Im Einsatz". `shopfloor_grund` gewinnt.
+    location: str | None = Field(None, max_length=80)
+    usage_status: str | None = Field(None, max_length=50)
+    shopfloor_grund: str | None = Field(None, max_length=30)
     purchase_date: date | None = None
     purchase_price: float | None = Field(None, ge=0)
     purchase_source: str | None = Field(None, max_length=100)
@@ -432,11 +466,13 @@ class ElectronicAssetUpdate(BaseModel):
     barcode: str | None = Field(None, max_length=50)
     condition: str | None = Field(None, max_length=50)
     status: str | None = Field(None, max_length=50)
+    # Nur ausdruecklich gesetzte Felder wirken (`model_fields_set`), damit
+    # `platz_id: null` und `shopfloor_grund: null` etwas bedeuten koennen.
+    platz_id: int | None = None
+    verbleib: str | None = Field(None, max_length=20)
+    shopfloor_grund: str | None = Field(None, max_length=30)
     location: str | None = Field(None, max_length=80)
     usage_status: str | None = Field(None, max_length=50)
-    homelab_role: str | None = Field(None, max_length=100)
-    host_name: str | None = Field(None, max_length=100)
-    service_refs: list[str] | None = None
     purchase_date: date | None = None
     purchase_price: float | None = Field(None, ge=0)
     purchase_source: str | None = Field(None, max_length=100)
@@ -452,11 +488,34 @@ class ElectronicAssetUpdate(BaseModel):
     ebay_watch_query: str | None = Field(None, max_length=200)
     external_refs: dict | None = None
     notes: str | None = Field(None, max_length=2000)
+    # Nur Filme & Medien (Quittung im Einbuch-Lauf): ausdruecklich leer
+    # geschickt heisst geleert, wie bei `platz_id`.
+    teil: str | None = Field(None, max_length=80)
+    edition: str | None = Field(None, max_length=80)
+    einband: str | None = Field(None, max_length=30)
+    medium: str | None = Field(None, max_length=30)
+
+
+class AbgangIn(BaseModel):
+    """Verkauft oder Weg (Stufe 7a). Ohne Datum gilt heute."""
+
+    abgang: str = Field(..., max_length=20)
+    am: date | None = None
+    erloes: float | None = Field(None, ge=0)
+    plattform: str | None = Field(None, max_length=60)
 
 
 class ElectronicAssetOut(BaseModel):
     id: int
+    kennung: str = ""
     name: str
+    # Nur Filme & Medien
+    titel_id: int | None = None
+    teil: str | None = None
+    edition: str | None = None
+    einband: str | None = None
+    medium: str | None = None
+    medientyp: str | None = None
     category: str | None
     brand: str | None
     model: str | None
@@ -464,11 +523,23 @@ class ElectronicAssetOut(BaseModel):
     barcode: str | None
     condition: str
     status: str
+    bereich: str = "technik"
     location: str
+    platz_id: int | None = None
+    platz_kennung: str | None = None
+    platz_pfad: str = ""
+    verbleib: str
+    shopfloor_grund: str | None = None
+    # Stufe 7a: gesetzt nur in der Liste der Abgaenge (`?abgegangen=true`)
+    abgang: str | None = None
+    abgang_am: date | None = None
+    erloes: float | None = None
+    abgang_plattform: str | None = None
+    # Nur bei Vermisstem: seit wann (aus dem Verlauf) und ob das Lager das
+    # Ausbuchen vorschlaegt (`AUSBUCHEN_NACH_TAGEN`). Gebucht wird nie von selbst.
+    vermisst_seit: datetime | None = None
+    ausbuchen_vorschlagen: bool = False
     usage_status: str
-    homelab_role: str | None
-    host_name: str | None
-    service_refs: list[str]
     in_active_use: bool
     purchase_date: date | None
     purchase_price: float | None
@@ -489,6 +560,9 @@ class ElectronicAssetOut(BaseModel):
     ebay_watch_query: str | None
     external_refs: dict = {}
     notes: str | None
+    # Dateiname des Fotos (wechselt mit jedem neuen Bild, taugt als Cache-Schluessel).
+    foto: str | None = None
+    einkauf_id: int | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -506,8 +580,6 @@ class SellRecommendationOut(BaseModel):
     warranty_days_left: int | None = None
     ebay_watch_query: str | None = None
     usage_status: str | None = None
-    homelab_role: str | None = None
-    host_name: str | None = None
 
 
 class MarketValueUpdateOut(BaseModel):
@@ -540,3 +612,264 @@ class PortfolioOut(BaseModel):
     delta_count: int
     categories: list[PortfolioCategoryOut]
     resale_recommendations: list[PortfolioResaleOut]
+
+
+# ---------------------------------------------------------------------------
+# Bereiche (Startseite)
+# ---------------------------------------------------------------------------
+
+class BereichSatzOut(BaseModel):
+    # Fester Schluessel je Satzart (vorbei/bald/knapp/ruhig/leer/verkauf/stufe):
+    # Tests vergleichen ihn statt des Wortlauts.
+    schluessel: str
+    text: str
+    anzahl: int = 0
+    blockiert: bool = False
+
+
+class GrundOut(BaseModel):
+    schluessel: str
+    name: str
+
+
+class BereichOut(BaseModel):
+    schluessel: str
+    name: str
+    bauart: str
+    frist: str | None = None
+    orte: list[str] = []
+    kategorien: list[str] = []
+    bereit: bool
+    # Shopfloor-Gruende des Bereichs (nur Sachen-Bereiche).
+    gruende: list[GrundOut] = []
+    satz: BereichSatzOut
+    titel_verweis: str | None = None
+
+
+# ---------------------------------------------------------------------------
+# Plaetze und Shopfloor
+# ---------------------------------------------------------------------------
+
+class PlatzCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=120)
+    art: str = Field(..., max_length=10)
+    eltern_id: int | None = None
+    inhalt: str | None = Field(None, max_length=2000)
+    bereich: str | None = Field(None, max_length=20)
+
+
+class PlatzUpdate(BaseModel):
+    # Nur ausdruecklich gesetzte Felder wirken; `eltern_id` = umziehen.
+    name: str | None = Field(None, max_length=120)
+    eltern_id: int | None = None
+    inhalt: str | None = Field(None, max_length=2000)
+    bereich: str | None = Field(None, max_length=20)
+
+
+class PlatzOut(BaseModel):
+    id: int
+    kennung: str
+    name: str
+    art: str
+    eltern_id: int | None
+    pfad: str
+    inhalt: str | None = None
+    bereich: str | None = None
+    kinder: int = 0
+    posten: int = 0
+    sachen: int = 0
+
+
+class PlatzDingOut(BaseModel):
+    """Ein Ding an einem Platz oder auf dem Shopfloor: Posten oder Sache."""
+    art: str  # "posten" oder "sache"
+    id: int
+    name: str
+    bereich: str
+    detail: str = ""
+    platz_id: int | None = None
+    platz_pfad: str = ""
+    shopfloor_grund: str | None = None
+    # Nur an Sachen: Etikett-Kennung `S-0001` und ob ein Foto da ist.
+    kennung: str | None = None
+    foto: str | None = None
+    # Nur an Sachen: eingelagert, shopfloor oder vermisst (Stufe 7a).
+    verbleib: str | None = None
+    mhd: date | None = None
+
+
+class SucheOut(BaseModel):
+    """„Wo ist …" (`/api/suche`): Dinge und Plaetze, beide gekappt; `mehr` sagt, dass es weitergeht."""
+    q: str
+    dinge: list[PlatzDingOut]
+    plaetze: list[PlatzOut]
+    mehr: bool = False
+
+
+class PlatzInhaltOut(BaseModel):
+    platz: PlatzOut
+    unterplaetze: list[PlatzOut]
+    dinge: list[PlatzDingOut]
+
+
+class ShopfloorGruppeOut(BaseModel):
+    # Schluessel des Grundes, None = noch nicht eingelagert
+    grund: str | None
+    name: str
+    dinge: list[PlatzDingOut]
+
+
+class ShopfloorOut(BaseModel):
+    gruppen: list[ShopfloorGruppeOut]
+    anzahl: int
+
+
+# ---------------------------------------------------------------------------
+# Laeufe: Einbuchen, Lagern, Abschluss (Stufe 4)
+# ---------------------------------------------------------------------------
+
+class EinbuchenIn(BaseModel):
+    """Ein Schritt im Einbuch-Lauf. Die Vorgabe (Platz, Zustand) gilt je Durchgang
+    und kommt bei jedem Schritt mit; der Lauf selbst lebt im Browser."""
+    bereich: str = Field(..., max_length=20)
+    code: str | None = Field(None, max_length=150)
+    # Name, wenn der Strichcode unbekannt ist oder es keinen gibt.
+    name: str | None = Field(None, max_length=200)
+    # Sachen: „bekannt" gesehen und trotzdem ein neues Stueck.
+    bestaetigt: bool = False
+    platz_id: int | None = None
+    zustand: str | None = Field(None, max_length=30)
+    # Vorrat: welche Posten dieser Lauf schon angelegt hat. Ein zweiter Scan
+    # desselben Produkts mit gleichem MHD erhoeht dort die Menge (Owner: ein
+    # Posten je MHD).
+    lauf_posten: list[int] = Field(default_factory=list, max_length=2000)
+    preis: float | None = Field(None, ge=0, le=1_000_000)
+    # Vorrat: Antwort auf `menge_fehlt`, sonst leer (Packungsgroesse gewinnt).
+    menge: float | None = Field(None, gt=0, le=1_000_000)
+    einheit: str | None = Field(None, max_length=20)
+    mhd: date | None = None
+    # Kategorie aus dem Vorschlag (OpenFoodFacts) beim Anlegen eines Produkts.
+    kategorie: str | None = Field(None, max_length=100)
+    # Filme & Medien: gewaehlter Katalogtitel (sonst wird `name` in medien
+    # gesucht bzw. angelegt), Vorgabe je Durchgang und was die Huelle sagt.
+    titel_id: int | None = None
+    # Der Katalogtitel zu `titel_id` (aus der Suche), `name` bleibt die Huelle.
+    katalogtitel: str | None = Field(None, max_length=200)
+    medium: str | None = Field(None, max_length=30)
+    medientyp: str | None = Field(None, max_length=30)
+    teil: str | None = Field(None, max_length=80)
+    edition: str | None = Field(None, max_length=80)
+
+
+class VorschlagOut(BaseModel):
+    name: str
+    category: str | None = None
+    quelle: str
+
+
+class EinbuchenOut(BaseModel):
+    # neu | mehr | bekannt | name_fehlt | wiedergesehen
+    art: str
+    posten: StockEntryOut | None = None
+    sache: ElectronicAssetOut | None = None
+    vorhanden: list[ElectronicAssetOut] = []
+    vorschlag: VorschlagOut | None = None
+    produkt_neu: bool = False
+    # Wenn das Produkt in einem anderen Bereich gefuehrt wird als dem des Laufs.
+    anderer_bereich: str | None = None
+    code: str | None = None
+    # Bei `menge_fehlt`: zu welchem Produkt die Menge fehlt
+    produkt_id: int | None = None
+    produkt_name: str | None = None
+    produkt_einheit: str | None = None
+    # Filme & Medien: medien war beim Einbuchen nicht erreichbar, der Titel
+    # wird nachgetragen, sobald es wieder antwortet.
+    titel_offen: bool = False
+    # Bei `name_fehlt` nach einem Buch-Scan: warum die ISBN keinen Titel ergab.
+    hinweis: str | None = None
+
+
+class LagernIn(BaseModel):
+    # ein = nur Offenes einlagern, um = Eingelagertes umziehen, aus = auf den Shopfloor
+    richtung: str = Field(..., max_length=3)
+    code: str = Field(..., min_length=1, max_length=150)
+    platz_id: int | None = None
+    grund: str | None = Field(None, max_length=30)
+    # Antwort auf eine Rueckfrage: MHD (Vorrat) oder Zustand (Sachen).
+    mhd: date | None = None
+    # Antwort „ohne MHD" auf die MHD-Rueckfrage (ein leeres `mhd` heisst „nicht gefragt").
+    ohne_mhd: bool = False
+    zustand: str | None = Field(None, max_length=30)
+
+
+class LagernOut(BaseModel):
+    # platz | gebucht | welches | unbekannt
+    art: str
+    platz: PlatzOut | None = None
+    ding: PlatzDingOut | None = None
+    vorher_pfad: str = ""
+    # Rueckfrage: welche MHDs bzw. Zustaende zur Wahl stehen
+    mhds: list[date | None] = []
+    zustaende: list[str] = []
+    # Rueckfrage `grund_fehlt`: die Gruende aus dem Bereich des Stuecks
+    gruende: list[str] = []
+    bereich: str | None = None
+    hinweis: str | None = None
+    # Stand vor der Buchung, damit die Quittung sie zuruecknehmen kann.
+    vorher_platz_id: int | None = None
+    vorher_verbleib: str | None = None
+    vorher_grund: str | None = None
+
+
+class ZuruecknehmenIn(BaseModel):
+    """Eine Quittungszeile zuruecknehmen: genau eins von `posten_id` und `sache_id`.
+
+    Im Lagern-Lauf kommt der Stand vor der Buchung mit (`vorher_*` aus
+    `LagernOut`); im Einbuch-Lauf heisst Zuruecknehmen, dass das Ding wieder geht.
+    """
+    posten_id: int | None = None
+    sache_id: int | None = None
+    vorher_platz_id: int | None = None
+    vorher_verbleib: str | None = Field(None, max_length=20)
+    vorher_grund: str | None = Field(None, max_length=30)
+
+
+class ZuruecknehmenOut(BaseModel):
+    text: str
+    ding: PlatzDingOut | None = None
+
+
+class AbschlussIn(BaseModel):
+    bereich: str = Field(..., max_length=20)
+    posten: list[int] = Field(default_factory=list, max_length=2000)
+    sachen: list[int] = Field(default_factory=list, max_length=2000)
+    gesamt: float | None = Field(None, gt=0, le=1_000_000)
+    laden: str | None = Field(None, max_length=100)
+    # Eine der Ketten aus app/ketten.py (Logo antippen); leer = Sonstiger,
+    # dann zaehlt ein Freitext mit Kettennamen trotzdem fuer die Kette.
+    kette: str | None = Field(None, max_length=20)
+    am: date | None = None
+
+
+class EinkaufOut(BaseModel):
+    id: int
+    bereich: str
+    am: date
+    laden: str | None
+    kette: str | None = None
+    gesamt: float | None
+    posten: int = 0
+    sachen: int = 0
+    # Summe der Einzelpreise und wie viele Dinge keinen haben
+    einzelpreise: float = 0.0
+    ohne_preis: int = 0
+    # Sachen: verteilter Anteil je Sache (id -> Euro)
+    verteilt: dict[int, float] = {}
+
+
+class TitelTrefferOut(BaseModel):
+    """Ein Titel aus dem medien-Katalog (Suche im Einbuch-Lauf)."""
+    id: int
+    titel: str
+    medientyp: str | None = None
+    jahr: str | None = None

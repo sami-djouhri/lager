@@ -20,33 +20,49 @@ critical_router = APIRouter(tags=["stats"])
 
 
 @router.get("/consumption", response_model=list[ConsumptionByProduct])
-def consumption_stats(days: int = Query(30, ge=1, le=365), db: Session = Depends(get_db)):
+def consumption_stats(
+    days: int = Query(30, ge=1, le=365),
+    bereich: str | None = None,
+    db: Session = Depends(get_db),
+):
     svc = StatsService(db)
-    return svc.consumption_by_product(days=days)
+    return svc.consumption_by_product(days=days, bereich=bereich)
 
 
 @router.get("/waste", response_model=WasteSummary)
-def waste_stats(days: int = Query(30, ge=1, le=365), db: Session = Depends(get_db)):
+def waste_stats(
+    days: int = Query(30, ge=1, le=365),
+    bereich: str | None = None,
+    db: Session = Depends(get_db),
+):
     svc = StatsService(db)
-    return svc.waste_summary(days=days)
+    return svc.waste_summary(days=days, bereich=bereich)
 
 
 @router.get("/expiry-forecast", response_model=list[ExpiryForecastItem])
-def expiry_forecast(db: Session = Depends(get_db)):
+def expiry_forecast(bereich: str | None = None, db: Session = Depends(get_db)):
     svc = StatsService(db)
-    return svc.expiry_forecast()
+    return svc.expiry_forecast(bereich=bereich)
 
 
 @router.get("/categories", response_model=list[CategoryAnalyticsItem])
-def category_analytics(days: int = Query(30, ge=1, le=365), db: Session = Depends(get_db)):
+def category_analytics(
+    days: int = Query(30, ge=1, le=365),
+    bereich: str | None = None,
+    db: Session = Depends(get_db),
+):
     svc = StatsService(db)
-    return svc.get_category_analytics(days=days)
+    return svc.get_category_analytics(days=days, bereich=bereich)
 
 
 @router.get("/low-stock", response_model=list[LowStockItem])
-def low_stock(threshold_pct: int = Query(100, ge=1, le=100), db: Session = Depends(get_db)):
+def low_stock(
+    threshold_pct: int = Query(100, ge=1, le=100),
+    bereich: str | None = None,
+    db: Session = Depends(get_db),
+):
     svc = StatsService(db)
-    return svc.low_stock(threshold_pct=threshold_pct)
+    return svc.low_stock(threshold_pct=threshold_pct, bereich=bereich)
 
 
 @critical_router.get("/api/critical")

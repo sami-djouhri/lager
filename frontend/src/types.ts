@@ -15,6 +15,7 @@ export type StockEntryOut = Schemas['StockEntryOut'];
 export type StockEntryCreate = Schemas['StockEntryCreate'];
 export type ConsumeRequest = Schemas['ConsumeRequest'];
 export type ConsumptionEventOut = Schemas['ConsumptionEventOut'];
+export type AusbuchenSammelRequest = Schemas['AusbuchenSammelRequest'];
 export type AvailabilityOut = Schemas['AvailabilityOut'];
 export type ExpiryForecastItem = Schemas['ExpiryForecastItem'];
 export type ConsumptionByProduct = Schemas['ConsumptionByProduct'];
@@ -22,6 +23,7 @@ export type WasteSummary = Schemas['WasteSummary'];
 export type TurnoverResult = Schemas['TurnoverResult'];
 export type CategoryAnalyticsItem = Schemas['CategoryAnalyticsItem'];
 export type LowStockItem = Schemas['LowStockItem'];
+export type BereichOut = Schemas['BereichOut'];
 
 // OpenAPI generiert pro Page[T]-Endpoint eine eigene konkrete Variante
 // (Page_ProductOut_, Page_StockEntryOut_, ...). Wir behalten zusätzlich
@@ -60,3 +62,18 @@ export interface BarcodeResult {
     shelf_life_days_default?: number | null;
   } | null;
 }
+
+export type PlatzOut = Schemas['PlatzOut'];
+export type PlatzCreate = Schemas['PlatzCreate'];
+export type PlatzInhaltOut = Schemas['PlatzInhaltOut'];
+export type PlatzDingOut = Schemas['PlatzDingOut'];
+export type ShopfloorOut = Schemas['ShopfloorOut'];
+
+export type EinbuchenIn = Schemas['EinbuchenIn'];
+export type EinbuchenOut = Schemas['EinbuchenOut'];
+export type LagernIn = Schemas['LagernIn'];
+export type LagernOut = Schemas['LagernOut'];
+export type ZuruecknehmenIn = Schemas['ZuruecknehmenIn'];
+export type ZuruecknehmenOut = Schemas['ZuruecknehmenOut'];
+export type AbschlussIn = Schemas['AbschlussIn'];
+export type EinkaufOut = Schemas['EinkaufOut'];

@@ -14,6 +14,8 @@ ssl/
 *.sqlite
 *.sqlite3
 data/
+# Die Rezeptvorlagen sind Code, keine Laufzeitdaten (fehlten bis 2026-11-01 in Gitea).
+!app/data/
 db-data/
 
 # Node

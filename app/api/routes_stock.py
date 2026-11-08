@@ -10,6 +10,7 @@ from app.domain import DomainError
 from app.events import INVENTORY_RESTOCKED, emit
 from app.models import StockEntry
 from app.schemas import AvailabilityOut, Page, StockEntryCreate, StockEntryOut, StockEntryUpdate
+from app.services.plaetze import ortstext, pfad
 from app.services.stock import StockService
 
 router = APIRouter(prefix="/api/stock", tags=["stock"])
@@ -31,9 +32,15 @@ def _entry_out(e: StockEntry) -> StockEntryOut:
         unit=e.unit,
         mhd=e.mhd,
         purchase_date=e.purchase_date,
-        location=e.location,
+        location=ortstext(e.platz),
+        platz_id=e.platz_id,
+        platz_kennung=e.platz.kennung if e.platz else None,
+        platz_pfad=pfad(e.platz),
         days_until_expiry=days,
         opened_at=e.opened_at,
+        preis=e.preis,
+        eingangsmenge=e.eingangsmenge,
+        einkauf_id=e.einkauf_id,
     )
 
 
@@ -43,6 +50,8 @@ def _entry_out(e: StockEntry) -> StockEntryOut:
 def list_stock(
     product_id: int | None = None,
     location: str | None = None,
+    platz_id: int | None = None,
+    bereich: str | None = None,
     only_positive: bool = True,
     offset: int = Query(0, ge=0),
     limit: int = Query(200, ge=1, le=MAX_PAGE_LIMIT),
@@ -52,6 +61,8 @@ def list_stock(
     entries, total = svc.list_entries(
         product_id=product_id,
         location=location,
+        platz_id=platz_id,
+        bereich=bereich,
         only_positive=only_positive,
         offset=offset,
         limit=limit,
@@ -105,7 +116,7 @@ def add_stock(body: StockEntryCreate, db: Session = Depends(get_db)):
             "quantity": entry.quantity,
             "unit": entry.unit,
             "mhd": entry.mhd.isoformat() if entry.mhd else None,
-            "location": entry.location,
+            "location": ortstext(entry.platz),
         },
     )
     return _entry_out(entry)

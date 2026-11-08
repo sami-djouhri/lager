@@ -42,7 +42,6 @@ def sample_stock(db_session):
                 unit="Stück",
                 mhd=today + timedelta(days=i - 3),
                 purchase_date=today,
-                location="Lager",
             )
         )
     db_session.add_all(entries)

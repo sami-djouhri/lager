@@ -26,7 +26,8 @@ export type IconName =
   | 'balken'
   | 'kamera'
   | 'teller'
-  | 'erneuern';
+  | 'erneuern'
+  | 'pfeil';
 
 const pfade: Record<IconName, JSX.Element> = {
   haus: (
@@ -58,6 +59,7 @@ const pfade: Record<IconName, JSX.Element> = {
     </>
   ),
   minus: <path d="M5.2 12h13.6" />,
+  pfeil: <path d="M9.5 5.5 16 12l-6.5 6.5" />,
   lupe: (
     <>
       <circle cx="10.8" cy="10.8" r="6.4" />

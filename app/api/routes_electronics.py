@@ -1,15 +1,15 @@
 """Elektronik-/eBay-Asset routes."""
 
-from datetime import date
+from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from app.config import settings
 from app.db import get_db
 from app.domain import DomainError
-from app.models import ElectronicAsset
+from app.models import Sache
 from app.schemas import (
+    AbgangIn,
     ElectronicAssetCreate,
     ElectronicAssetOut,
     ElectronicAssetUpdate,
@@ -20,19 +20,35 @@ from app.schemas import (
     PortfolioResaleOut,
     SellRecommendationOut,
 )
-from app.services.electronics import ElectronicAssetService
-from app.services.homelab_inventory import seed_known_homelab_assets
+from app.services.electronics import (
+    ElectronicAssetService,
+    lange_vermisst,
+    verkauf_empfohlen,
+    vermisst_seit,
+)
+from app.services import fotos, medien
 from app.services.marktwatch import refresh_market_value
+from app.services.plaetze import ortstext, pfad
 
 router = APIRouter(prefix="/api/electronics", tags=["electronics"])
 
 MAX_PAGE_LIMIT = 500
 
 
-def _asset_out(asset: ElectronicAsset) -> ElectronicAssetOut:
+def _asset_out(asset: Sache, seit: dict[int, datetime] | None = None) -> ElectronicAssetOut:
+    vermisst = (seit or {}).get(asset.id)
     return ElectronicAssetOut(
+        vermisst_seit=vermisst,
+        ausbuchen_vorschlagen=lange_vermisst(vermisst),
         id=asset.id,
+        kennung=asset.kennung,
         name=asset.name,
+        titel_id=asset.titel_id,
+        teil=asset.teil,
+        edition=asset.edition,
+        einband=asset.einband,
+        medium=asset.medium,
+        medientyp=asset.medientyp,
         category=asset.category,
         brand=asset.brand,
         model=asset.model,
@@ -40,11 +56,18 @@ def _asset_out(asset: ElectronicAsset) -> ElectronicAssetOut:
         barcode=asset.barcode,
         condition=asset.condition,
         status=asset.status,
-        location=asset.location,
+        bereich=asset.bereich,
+        location=ortstext(asset.platz),
+        platz_id=asset.platz_id,
+        platz_kennung=asset.platz.kennung if asset.platz else None,
+        platz_pfad=pfad(asset.platz),
+        verbleib=asset.verbleib,
+        shopfloor_grund=asset.shopfloor_grund,
+        abgang=asset.abgang,
+        abgang_am=asset.abgang_am,
+        erloes=asset.erloes,
+        abgang_plattform=asset.abgang_plattform,
         usage_status=asset.usage_status,
-        homelab_role=asset.homelab_role,
-        host_name=asset.host_name,
-        service_refs=asset.service_refs,
         in_active_use=asset.in_active_use,
         purchase_date=asset.purchase_date,
         purchase_price=asset.purchase_price,
@@ -65,12 +88,14 @@ def _asset_out(asset: ElectronicAsset) -> ElectronicAssetOut:
         ebay_watch_query=asset.ebay_watch_query,
         external_refs=asset.external_refs,
         notes=asset.notes,
+        foto=asset.foto,
+        einkauf_id=asset.einkauf_id,
         created_at=asset.created_at,
         updated_at=asset.updated_at,
     )
 
 
-def _sell_out(asset: ElectronicAsset) -> SellRecommendationOut:
+def _sell_out(asset: Sache) -> SellRecommendationOut:
     warranty_days_left = (asset.warranty_end - date.today()).days if asset.warranty_end else None
     return SellRecommendationOut(
         asset_id=asset.id,
@@ -83,8 +108,6 @@ def _sell_out(asset: ElectronicAsset) -> SellRecommendationOut:
         warranty_days_left=warranty_days_left,
         ebay_watch_query=asset.ebay_watch_query,
         usage_status=asset.usage_status,
-        homelab_role=asset.homelab_role,
-        host_name=asset.host_name,
     )
 
 
@@ -94,12 +117,16 @@ def list_assets(
     status: str | None = None,
     category: str | None = None,
     sell_decision: str | None = None,
+    bereich: str = Query("technik", max_length=20),
+    abgegangen: bool = False,
     offset: int = Query(0, ge=0),
     limit: int = Query(200, ge=1, le=MAX_PAGE_LIMIT),
     db: Session = Depends(get_db),
 ):
     svc = ElectronicAssetService(db)
     assets, total = svc.list_all(
+        bereich=bereich,
+        abgegangen=abgegangen,
         q=q,
         status=status,
         category=category,
@@ -107,8 +134,9 @@ def list_assets(
         offset=offset,
         limit=limit,
     )
+    seit = vermisst_seit(db, assets)
     return Page[ElectronicAssetOut](
-        items=[_asset_out(a) for a in assets],
+        items=[_asset_out(a, seit) for a in assets],
         total=total,
         offset=offset,
         limit=limit,
@@ -119,15 +147,6 @@ def list_assets(
 def sell_candidates(db: Session = Depends(get_db)):
     svc = ElectronicAssetService(db)
     return [_sell_out(a) for a in svc.sell_candidates()]
-
-
-@router.post("/homelab/seed-known", response_model=list[ElectronicAssetOut])
-def seed_homelab_assets(db: Session = Depends(get_db)):
-    assets = seed_known_homelab_assets(db)
-    db.commit()
-    for asset in assets:
-        db.refresh(asset)
-    return [_asset_out(a) for a in assets]
 
 
 @router.get("/portfolio", response_model=PortfolioOut)
@@ -168,12 +187,7 @@ def portfolio(db: Session = Depends(get_db)):
         entry.market_value += mv or 0.0
 
         # Empfehlung: nicht in aktiver Nutzung, nicht gepinnt, Wert über Threshold
-        if (
-            mv is not None
-            and mv >= settings.RESALE_THRESHOLD_EUR
-            and not a.in_active_use
-            and not a.manual_pin
-        ):
+        if verkauf_empfohlen(a):
             recs.append(
                 PortfolioResaleOut(
                     asset_id=a.id,
@@ -225,7 +239,7 @@ def get_asset(asset_id: int, db: Session = Depends(get_db)):
     asset = svc.get(asset_id)
     if not asset:
         raise DomainError("Elektronik-Asset nicht gefunden", {"asset_id": asset_id})
-    return _asset_out(asset)
+    return _asset_out(asset, vermisst_seit(db, [asset]))
 
 
 @router.post("", response_model=ElectronicAssetOut, status_code=201)
@@ -243,11 +257,38 @@ def update_asset(asset_id: int, body: ElectronicAssetUpdate, db: Session = Depen
     asset = svc.update(asset_id, body)
     db.commit()
     db.refresh(asset)
+    if asset.bereich == medien.BEREICH:
+        medien.anstossen()
+    return _asset_out(asset)
+
+
+@router.post("/{asset_id}/abgang", response_model=ElectronicAssetOut)
+def abgang_buchen(asset_id: int, body: AbgangIn, db: Session = Depends(get_db)):
+    """Verkauft oder Weg (Stufe 7a). Die Zeile bleibt, sie faellt aus den Listen."""
+    asset = ElectronicAssetService(db).abgang(
+        asset_id, body.abgang, am=body.am, erloes=body.erloes, plattform=body.plattform)
+    db.commit()
+    db.refresh(asset)
+    return _asset_out(asset)
+
+
+@router.delete("/{asset_id}/abgang", response_model=ElectronicAssetOut)
+def abgang_zuruecknehmen(asset_id: int, db: Session = Depends(get_db)):
+    asset = ElectronicAssetService(db).abgang_zuruecknehmen(asset_id)
+    db.commit()
+    db.refresh(asset)
     return _asset_out(asset)
 
 
 @router.delete("/{asset_id}", status_code=204)
 def delete_asset(asset_id: int, db: Session = Depends(get_db)):
     svc = ElectronicAssetService(db)
+    asset = svc.get(asset_id)
+    foto = asset.foto if asset else None
+    war_medien = bool(asset and asset.bereich == medien.BEREICH)
     svc.delete(asset_id)
     db.commit()
+    if war_medien:
+        medien.anstossen()
+    # Erst nach dem Commit: rollt das Loeschen zurueck, braucht die Zeile ihr Bild noch.
+    fotos.loeschen(foto)

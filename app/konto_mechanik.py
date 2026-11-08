@@ -117,7 +117,7 @@ def abdeckung_pruefen(plan: Plan, metadata: Any) -> list[str]:
     if not metadata.tables:
         raise RuntimeError(
             "Die Metadaten sind leer. Vermutlich wurde app.models nicht importiert. "
-            "Ohne Tabellen laufen Abdeckungs- und Restpruefung blind."
+            "Ohne Tabellen laufen Abdeckungs- und Restprüfung blind."
         )
 
     befunde: list[str] = []
@@ -364,7 +364,7 @@ def dateien_entfernen(pfade: Any, trockenlauf: bool) -> tuple[list[str], list[st
         entfernt += 1
     if entfernt:
         zeilen.append(f"{entfernt} Datei(en)/Ordner in der Ablage "
-                      f"{'waeren zu loeschen' if trockenlauf else 'geloescht'}")
+                      f"{'wären zu löschen' if trockenlauf else 'gelöscht'}")
     if fehlend:
         zeilen.append(f"{fehlend} Pfad(e) lagen nicht mehr in der Ablage")
     return zeilen, fehler
@@ -381,7 +381,7 @@ def als_programm(plan: Plan, metadata: Any, sitzung_fabrik: Any,
         description="Den Bestand eines Mandanten anzeigen oder entfernen.")
     zerleger.add_argument("--sub", required=True, help="Mandant (sub aus der Anmeldung)")
     zerleger.add_argument("--loeschen", action="store_true",
-                          help="wirklich loeschen. Ohne diesen Schalter nur anzeigen.")
+                          help="wirklich löschen. Ohne diesen Schalter nur anzeigen.")
     args = zerleger.parse_args(argumente)
 
     db = sitzung_fabrik()

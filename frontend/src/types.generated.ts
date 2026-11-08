@@ -146,6 +146,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/stock/ausbuchen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ausbuchen Sammel
+         * @description Mehrfachauswahl im Bestand: jeden Posten ganz, alles oder nichts.
+         */
+        post: operations["ausbuchen_sammel_api_stock_ausbuchen_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/barcode/{code}": {
         parameters: {
             query?: never;
@@ -347,23 +367,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/electronics/homelab/seed-known": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Seed Homelab Assets */
-        post: operations["seed_homelab_assets_api_electronics_homelab_seed_known_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/electronics/portfolio": {
         parameters: {
             query?: never;
@@ -418,6 +421,27 @@ export interface paths {
         post?: never;
         /** Delete Asset */
         delete: operations["delete_asset_api_electronics__asset_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/electronics/{asset_id}/abgang": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Abgang Buchen
+         * @description Verkauft oder Weg (Stufe 7a). Die Zeile bleibt, sie faellt aus den Listen.
+         */
+        post: operations["abgang_buchen_api_electronics__asset_id__abgang_post"];
+        /** Abgang Zuruecknehmen */
+        delete: operations["abgang_zuruecknehmen_api_electronics__asset_id__abgang_delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -491,6 +515,292 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/bereiche": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Bereiche */
+        get: operations["bereiche_api_bereiche_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plaetze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Liste */
+        get: operations["liste_api_plaetze_get"];
+        put?: never;
+        /** Anlegen */
+        post: operations["anlegen_api_plaetze_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plaetze/kennung/{kennung}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Per Kennung */
+        get: operations["per_kennung_api_plaetze_kennung__kennung__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plaetze/{platz_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Inhalt */
+        get: operations["inhalt_api_plaetze__platz_id__get"];
+        /** Aendern */
+        put: operations["aendern_api_plaetze__platz_id__put"];
+        post?: never;
+        /** Loeschen */
+        delete: operations["loeschen_api_plaetze__platz_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/shopfloor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Shopfloor
+         * @description Was eingebucht, aber nicht an seinem Platz ist (Vorbild medien).
+         *
+         *     Feste Reihenfolge: zuerst „noch nicht eingelagert", denn das ist die
+         *     Arbeit, die ansteht; danach die Gruende. Vorraete kennen keinen Grund
+         *     (Owner: Vorrat nur Platz oder Shopfloor).
+         */
+        get: operations["shopfloor_api_shopfloor_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/suche": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Suche
+         * @description „Wo ist …" ueber alles: Posten mit Bestand, Sachen (auch Filme), Plaetze.
+         *
+         *     Gesucht wird gefaltet (Umlaute wie ae, Gross/Klein egal) in Name, Kennung,
+         *     Strichcode, Marke/Modell und Kisteninhalt. In Python statt per SQL-LIKE:
+         *     SQLite faltet nur ASCII, „Käse" faende „KÄSE" sonst nicht. Bei ein paar
+         *     tausend Zeilen je Mandant ist das schneller als jede Anfrage ueber das Netz.
+         *
+         *     Ordnung: genaue Kennung oder Strichcode zuerst, dann Namen, die mit dem
+         *     Suchwort beginnen, dann der Rest nach Name.
+         */
+        get: operations["suche_api_suche_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/laeufe/einbuchen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Einbuchen */
+        post: operations["einbuchen_api_laeufe_einbuchen_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/laeufe/abschluss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Abschluss */
+        post: operations["abschluss_api_laeufe_abschluss_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/einkaeufe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Einkaeufe */
+        get: operations["einkaeufe_api_einkaeufe_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/laeufe/lagern": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Lagern */
+        post: operations["lagern_api_laeufe_lagern_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/laeufe/einbuchen/zuruecknehmen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Einbuchen Zuruecknehmen */
+        post: operations["einbuchen_zuruecknehmen_api_laeufe_einbuchen_zuruecknehmen_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/laeufe/lagern/zuruecknehmen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Lagern Zuruecknehmen */
+        post: operations["lagern_zuruecknehmen_api_laeufe_lagern_zuruecknehmen_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sachen/{sache_id}/foto": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Foto Zeigen */
+        get: operations["foto_zeigen_api_sachen__sache_id__foto_get"];
+        put?: never;
+        /**
+         * Foto Hochladen
+         * @description Das Foto als rohes JPEG im Koerper (kein multipart, die Oberflaeche
+         *     verkleinert ohnehin selbst und hat damit schon ein Blob).
+         */
+        post: operations["foto_hochladen_api_sachen__sache_id__foto_post"];
+        /** Foto Entfernen */
+        delete: operations["foto_entfernen_api_sachen__sache_id__foto_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/medien/titel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Medien Titel
+         * @description Titelsuche im medien-Katalog fuer den Einbuch-Lauf (der Browser erreicht
+         *     medien nicht mit dem Schluessel des Lagers, deshalb geht es hier durch).
+         */
+        get: operations["medien_titel_api_medien_titel_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/preise": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Preise */
+        get: operations["preise_api_preise_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -512,6 +822,60 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AbgangIn
+         * @description Verkauft oder Weg (Stufe 7a). Ohne Datum gilt heute.
+         */
+        AbgangIn: {
+            /** Abgang */
+            abgang: string;
+            /** Am */
+            am?: string | null;
+            /** Erloes */
+            erloes?: number | null;
+            /** Plattform */
+            plattform?: string | null;
+        };
+        /** AbschlussIn */
+        AbschlussIn: {
+            /** Bereich */
+            bereich: string;
+            /** Posten */
+            posten?: number[];
+            /** Sachen */
+            sachen?: number[];
+            /** Gesamt */
+            gesamt?: number | null;
+            /** Laden */
+            laden?: string | null;
+            /** Kette */
+            kette?: string | null;
+            /** Am */
+            am?: string | null;
+        };
+        /**
+         * AusbuchenSammelRequest
+         * @description Mehrere Posten ganz ausbuchen (Mehrfachauswahl im Bestand).
+         *
+         *     Anders als `/consume` nennt der Aufruf Posten statt einer Menge je Produkt:
+         *     wer drei abgelaufene Joghurts waehlt, meint genau diese drei und nicht die
+         *     drei mit dem aeltesten MHD.
+         */
+        AusbuchenSammelRequest: {
+            /** Entry Ids */
+            entry_ids: number[];
+            /**
+             * Reason
+             * @default abgelaufen
+             * @enum {string}
+             */
+            reason?: "verbraucht" | "weggeworfen" | "abgelaufen";
+            /**
+             * Source
+             * @default manual
+             */
+            source?: string;
+        };
         /** AvailabilityOut */
         AvailabilityOut: {
             /** Product Id */
@@ -520,6 +884,54 @@ export interface components {
             unit: string;
             /** Total */
             total: number;
+        };
+        /** BereichOut */
+        BereichOut: {
+            /** Schluessel */
+            schluessel: string;
+            /** Name */
+            name: string;
+            /** Bauart */
+            bauart: string;
+            /** Frist */
+            frist?: string | null;
+            /**
+             * Orte
+             * @default []
+             */
+            orte?: string[];
+            /**
+             * Kategorien
+             * @default []
+             */
+            kategorien?: string[];
+            /** Bereit */
+            bereit: boolean;
+            /**
+             * Gruende
+             * @default []
+             */
+            gruende?: components["schemas"]["GrundOut"][];
+            satz: components["schemas"]["BereichSatzOut"];
+            /** Titel Verweis */
+            titel_verweis?: string | null;
+        };
+        /** BereichSatzOut */
+        BereichSatzOut: {
+            /** Schluessel */
+            schluessel: string;
+            /** Text */
+            text: string;
+            /**
+             * Anzahl
+             * @default 0
+             */
+            anzahl?: number;
+            /**
+             * Blockiert
+             * @default false
+             */
+            blockiert?: boolean;
         };
         /**
          * CategoryAnalyticsItem
@@ -636,6 +1048,132 @@ export interface components {
             /** Source */
             source: string;
         };
+        /**
+         * EinbuchenIn
+         * @description Ein Schritt im Einbuch-Lauf. Die Vorgabe (Platz, Zustand) gilt je Durchgang
+         *     und kommt bei jedem Schritt mit; der Lauf selbst lebt im Browser.
+         */
+        EinbuchenIn: {
+            /** Bereich */
+            bereich: string;
+            /** Code */
+            code?: string | null;
+            /** Name */
+            name?: string | null;
+            /**
+             * Bestaetigt
+             * @default false
+             */
+            bestaetigt?: boolean;
+            /** Platz Id */
+            platz_id?: number | null;
+            /** Zustand */
+            zustand?: string | null;
+            /** Lauf Posten */
+            lauf_posten?: number[];
+            /** Preis */
+            preis?: number | null;
+            /** Menge */
+            menge?: number | null;
+            /** Einheit */
+            einheit?: string | null;
+            /** Mhd */
+            mhd?: string | null;
+            /** Kategorie */
+            kategorie?: string | null;
+            /** Titel Id */
+            titel_id?: number | null;
+            /** Katalogtitel */
+            katalogtitel?: string | null;
+            /** Medium */
+            medium?: string | null;
+            /** Medientyp */
+            medientyp?: string | null;
+            /** Teil */
+            teil?: string | null;
+            /** Edition */
+            edition?: string | null;
+        };
+        /** EinbuchenOut */
+        EinbuchenOut: {
+            /** Art */
+            art: string;
+            posten?: components["schemas"]["StockEntryOut"] | null;
+            sache?: components["schemas"]["ElectronicAssetOut"] | null;
+            /**
+             * Vorhanden
+             * @default []
+             */
+            vorhanden?: components["schemas"]["ElectronicAssetOut"][];
+            vorschlag?: components["schemas"]["VorschlagOut"] | null;
+            /**
+             * Produkt Neu
+             * @default false
+             */
+            produkt_neu?: boolean;
+            /** Anderer Bereich */
+            anderer_bereich?: string | null;
+            /** Code */
+            code?: string | null;
+            /** Produkt Id */
+            produkt_id?: number | null;
+            /** Produkt Name */
+            produkt_name?: string | null;
+            /** Produkt Einheit */
+            produkt_einheit?: string | null;
+            /**
+             * Titel Offen
+             * @default false
+             */
+            titel_offen?: boolean;
+            /** Hinweis */
+            hinweis?: string | null;
+        };
+        /** EinkaufOut */
+        EinkaufOut: {
+            /** Id */
+            id: number;
+            /** Bereich */
+            bereich: string;
+            /**
+             * Am
+             * Format: date
+             */
+            am: string;
+            /** Laden */
+            laden: string | null;
+            /** Kette */
+            kette?: string | null;
+            /** Gesamt */
+            gesamt: number | null;
+            /**
+             * Posten
+             * @default 0
+             */
+            posten?: number;
+            /**
+             * Sachen
+             * @default 0
+             */
+            sachen?: number;
+            /**
+             * Einzelpreise
+             * @default 0
+             */
+            einzelpreise?: number;
+            /**
+             * Ohne Preis
+             * @default 0
+             */
+            ohne_preis?: number;
+            /**
+             * Verteilt
+             * @default {}
+             */
+            verteilt?: {
+                [key: string]: number;
+            };
+        };
         /** ElectronicAssetCreate */
         ElectronicAssetCreate: {
             /** Name */
@@ -652,7 +1190,7 @@ export interface components {
             barcode?: string | null;
             /**
              * Condition
-             * @default gut
+             * @default Gut
              */
             condition?: string;
             /**
@@ -660,25 +1198,14 @@ export interface components {
              * @default aktiv
              */
             status?: string;
-            /**
-             * Location
-             * @default Elektronik
-             */
-            location?: string;
-            /**
-             * Usage Status
-             * @default reserve
-             */
-            usage_status?: string;
-            /** Homelab Role */
-            homelab_role?: string | null;
-            /** Host Name */
-            host_name?: string | null;
-            /**
-             * Service Refs
-             * @default []
-             */
-            service_refs?: string[];
+            /** Platz Id */
+            platz_id?: number | null;
+            /** Location */
+            location?: string | null;
+            /** Usage Status */
+            usage_status?: string | null;
+            /** Shopfloor Grund */
+            shopfloor_grund?: string | null;
             /** Purchase Date */
             purchase_date?: string | null;
             /** Purchase Price */
@@ -725,8 +1252,25 @@ export interface components {
         ElectronicAssetOut: {
             /** Id */
             id: number;
+            /**
+             * Kennung
+             * @default
+             */
+            kennung?: string;
             /** Name */
             name: string;
+            /** Titel Id */
+            titel_id?: number | null;
+            /** Teil */
+            teil?: string | null;
+            /** Edition */
+            edition?: string | null;
+            /** Einband */
+            einband?: string | null;
+            /** Medium */
+            medium?: string | null;
+            /** Medientyp */
+            medientyp?: string | null;
             /** Category */
             category: string | null;
             /** Brand */
@@ -741,16 +1285,43 @@ export interface components {
             condition: string;
             /** Status */
             status: string;
+            /**
+             * Bereich
+             * @default technik
+             */
+            bereich?: string;
             /** Location */
             location: string;
+            /** Platz Id */
+            platz_id?: number | null;
+            /** Platz Kennung */
+            platz_kennung?: string | null;
+            /**
+             * Platz Pfad
+             * @default
+             */
+            platz_pfad?: string;
+            /** Verbleib */
+            verbleib: string;
+            /** Shopfloor Grund */
+            shopfloor_grund?: string | null;
+            /** Abgang */
+            abgang?: string | null;
+            /** Abgang Am */
+            abgang_am?: string | null;
+            /** Erloes */
+            erloes?: number | null;
+            /** Abgang Plattform */
+            abgang_plattform?: string | null;
+            /** Vermisst Seit */
+            vermisst_seit?: string | null;
+            /**
+             * Ausbuchen Vorschlagen
+             * @default false
+             */
+            ausbuchen_vorschlagen?: boolean;
             /** Usage Status */
             usage_status: string;
-            /** Homelab Role */
-            homelab_role: string | null;
-            /** Host Name */
-            host_name: string | null;
-            /** Service Refs */
-            service_refs: string[];
             /** In Active Use */
             in_active_use: boolean;
             /** Purchase Date */
@@ -796,6 +1367,10 @@ export interface components {
             };
             /** Notes */
             notes: string | null;
+            /** Foto */
+            foto?: string | null;
+            /** Einkauf Id */
+            einkauf_id?: number | null;
             /**
              * Created At
              * Format: date-time
@@ -825,16 +1400,16 @@ export interface components {
             condition?: string | null;
             /** Status */
             status?: string | null;
+            /** Platz Id */
+            platz_id?: number | null;
+            /** Verbleib */
+            verbleib?: string | null;
+            /** Shopfloor Grund */
+            shopfloor_grund?: string | null;
             /** Location */
             location?: string | null;
             /** Usage Status */
             usage_status?: string | null;
-            /** Homelab Role */
-            homelab_role?: string | null;
-            /** Host Name */
-            host_name?: string | null;
-            /** Service Refs */
-            service_refs?: string[] | null;
             /** Purchase Date */
             purchase_date?: string | null;
             /** Purchase Price */
@@ -867,6 +1442,14 @@ export interface components {
             } | null;
             /** Notes */
             notes?: string | null;
+            /** Teil */
+            teil?: string | null;
+            /** Edition */
+            edition?: string | null;
+            /** Einband */
+            einband?: string | null;
+            /** Medium */
+            medium?: string | null;
         };
         /** ExpiryForecastItem */
         ExpiryForecastItem: {
@@ -900,10 +1483,92 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** GrundOut */
+        GrundOut: {
+            /** Schluessel */
+            schluessel: string;
+            /** Name */
+            name: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** KettenPreisOut */
+        KettenPreisOut: {
+            /** Kette */
+            kette: string;
+            /** Unit */
+            unit: string;
+            /** Preis Je Einheit */
+            preis_je_einheit: number;
+            /** Letzter Preis */
+            letzter_preis: number;
+            /** Letzte Menge */
+            letzte_menge: number;
+            /**
+             * Am
+             * Format: date
+             */
+            am: string;
+        };
+        /** LagernIn */
+        LagernIn: {
+            /** Richtung */
+            richtung: string;
+            /** Code */
+            code: string;
+            /** Platz Id */
+            platz_id?: number | null;
+            /** Grund */
+            grund?: string | null;
+            /** Mhd */
+            mhd?: string | null;
+            /**
+             * Ohne Mhd
+             * @default false
+             */
+            ohne_mhd?: boolean;
+            /** Zustand */
+            zustand?: string | null;
+        };
+        /** LagernOut */
+        LagernOut: {
+            /** Art */
+            art: string;
+            platz?: components["schemas"]["PlatzOut"] | null;
+            ding?: components["schemas"]["PlatzDingOut"] | null;
+            /**
+             * Vorher Pfad
+             * @default
+             */
+            vorher_pfad?: string;
+            /**
+             * Mhds
+             * @default []
+             */
+            mhds?: (string | null)[];
+            /**
+             * Zustaende
+             * @default []
+             */
+            zustaende?: string[];
+            /**
+             * Gruende
+             * @default []
+             */
+            gruende?: string[];
+            /** Bereich */
+            bereich?: string | null;
+            /** Hinweis */
+            hinweis?: string | null;
+            /** Vorher Platz Id */
+            vorher_platz_id?: number | null;
+            /** Vorher Verbleib */
+            vorher_verbleib?: string | null;
+            /** Vorher Grund */
+            vorher_grund?: string | null;
         };
         /** LowStockItem */
         LowStockItem: {
@@ -1048,6 +1713,108 @@ export interface components {
             /** Limit */
             limit: number;
         };
+        /** PlatzCreate */
+        PlatzCreate: {
+            /** Name */
+            name: string;
+            /** Art */
+            art: string;
+            /** Eltern Id */
+            eltern_id?: number | null;
+            /** Inhalt */
+            inhalt?: string | null;
+            /** Bereich */
+            bereich?: string | null;
+        };
+        /**
+         * PlatzDingOut
+         * @description Ein Ding an einem Platz oder auf dem Shopfloor: Posten oder Sache.
+         */
+        PlatzDingOut: {
+            /** Art */
+            art: string;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Bereich */
+            bereich: string;
+            /**
+             * Detail
+             * @default
+             */
+            detail?: string;
+            /** Platz Id */
+            platz_id?: number | null;
+            /**
+             * Platz Pfad
+             * @default
+             */
+            platz_pfad?: string;
+            /** Shopfloor Grund */
+            shopfloor_grund?: string | null;
+            /** Kennung */
+            kennung?: string | null;
+            /** Foto */
+            foto?: string | null;
+            /** Verbleib */
+            verbleib?: string | null;
+            /** Mhd */
+            mhd?: string | null;
+        };
+        /** PlatzInhaltOut */
+        PlatzInhaltOut: {
+            platz: components["schemas"]["PlatzOut"];
+            /** Unterplaetze */
+            unterplaetze: components["schemas"]["PlatzOut"][];
+            /** Dinge */
+            dinge: components["schemas"]["PlatzDingOut"][];
+        };
+        /** PlatzOut */
+        PlatzOut: {
+            /** Id */
+            id: number;
+            /** Kennung */
+            kennung: string;
+            /** Name */
+            name: string;
+            /** Art */
+            art: string;
+            /** Eltern Id */
+            eltern_id: number | null;
+            /** Pfad */
+            pfad: string;
+            /** Inhalt */
+            inhalt?: string | null;
+            /** Bereich */
+            bereich?: string | null;
+            /**
+             * Kinder
+             * @default 0
+             */
+            kinder?: number;
+            /**
+             * Posten
+             * @default 0
+             */
+            posten?: number;
+            /**
+             * Sachen
+             * @default 0
+             */
+            sachen?: number;
+        };
+        /** PlatzUpdate */
+        PlatzUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Eltern Id */
+            eltern_id?: number | null;
+            /** Inhalt */
+            inhalt?: string | null;
+            /** Bereich */
+            bereich?: string | null;
+        };
         /** PortfolioCategoryOut */
         PortfolioCategoryOut: {
             /** Category */
@@ -1087,10 +1854,33 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** PreisOut */
+        PreisOut: {
+            /** Product Id */
+            product_id: number;
+            /** Unit */
+            unit: string;
+            /** Preis Je Einheit */
+            preis_je_einheit: number;
+            /** Letzter Preis */
+            letzter_preis: number;
+            /** Letzte Menge */
+            letzte_menge: number;
+            /**
+             * Je Kette
+             * @default []
+             */
+            je_kette?: components["schemas"]["KettenPreisOut"][];
+        };
         /** ProductCreate */
         ProductCreate: {
             /** Name */
             name: string;
+            /**
+             * Bereich
+             * @default lebensmittel
+             */
+            bereich?: string;
             /** Barcode */
             barcode?: string | null;
             /** Category */
@@ -1131,6 +1921,11 @@ export interface components {
             id: number;
             /** Name */
             name: string;
+            /**
+             * Bereich
+             * @default lebensmittel
+             */
+            bereich?: string;
             /** Barcode */
             barcode: string | null;
             /** Category */
@@ -1160,6 +1955,8 @@ export interface components {
         ProductUpdate: {
             /** Name */
             name?: string | null;
+            /** Bereich */
+            bereich?: string | null;
             /** Barcode */
             barcode?: string | null;
             /** Category */
@@ -1217,10 +2014,22 @@ export interface components {
             ebay_watch_query?: string | null;
             /** Usage Status */
             usage_status?: string | null;
-            /** Homelab Role */
-            homelab_role?: string | null;
-            /** Host Name */
-            host_name?: string | null;
+        };
+        /** ShopfloorGruppeOut */
+        ShopfloorGruppeOut: {
+            /** Grund */
+            grund: string | null;
+            /** Name */
+            name: string;
+            /** Dinge */
+            dinge: components["schemas"]["PlatzDingOut"][];
+        };
+        /** ShopfloorOut */
+        ShopfloorOut: {
+            /** Gruppen */
+            gruppen: components["schemas"]["ShopfloorGruppeOut"][];
+            /** Anzahl */
+            anzahl: number;
         };
         /** ShoppingSuggestionOut */
         ShoppingSuggestionOut: {
@@ -1252,13 +2061,14 @@ export interface components {
             mhd?: string | null;
             /** Purchase Date */
             purchase_date?: string | null;
-            /**
-             * Location
-             * @default Vorratskammer
-             */
-            location?: string;
+            /** Platz Id */
+            platz_id?: number | null;
+            /** Location */
+            location?: string | null;
             /** Lot Note */
             lot_note?: string | null;
+            /** Preis */
+            preis?: number | null;
         };
         /** StockEntryOut */
         StockEntryOut: {
@@ -1281,10 +2091,25 @@ export interface components {
             purchase_date: string | null;
             /** Location */
             location: string;
+            /** Platz Id */
+            platz_id?: number | null;
+            /** Platz Kennung */
+            platz_kennung?: string | null;
+            /**
+             * Platz Pfad
+             * @default
+             */
+            platz_pfad?: string;
             /** Days Until Expiry */
             days_until_expiry?: number | null;
             /** Opened At */
             opened_at?: string | null;
+            /** Preis */
+            preis?: number | null;
+            /** Eingangsmenge */
+            eingangsmenge?: number | null;
+            /** Einkauf Id */
+            einkauf_id?: number | null;
         };
         /** StockEntryUpdate */
         StockEntryUpdate: {
@@ -1296,12 +2121,47 @@ export interface components {
             mhd?: string | null;
             /** Purchase Date */
             purchase_date?: string | null;
+            /** Platz Id */
+            platz_id?: number | null;
             /** Location */
             location?: string | null;
             /** Lot Note */
             lot_note?: string | null;
             /** Opened At */
             opened_at?: string | null;
+            /** Preis */
+            preis?: number | null;
+        };
+        /**
+         * SucheOut
+         * @description „Wo ist …" (`/api/suche`): Dinge und Plaetze, beide gekappt; `mehr` sagt, dass es weitergeht.
+         */
+        SucheOut: {
+            /** Q */
+            q: string;
+            /** Dinge */
+            dinge: components["schemas"]["PlatzDingOut"][];
+            /** Plaetze */
+            plaetze: components["schemas"]["PlatzOut"][];
+            /**
+             * Mehr
+             * @default false
+             */
+            mehr?: boolean;
+        };
+        /**
+         * TitelTrefferOut
+         * @description Ein Titel aus dem medien-Katalog (Suche im Einbuch-Lauf).
+         */
+        TitelTrefferOut: {
+            /** Id */
+            id: number;
+            /** Titel */
+            titel: string;
+            /** Medientyp */
+            medientyp?: string | null;
+            /** Jahr */
+            jahr?: string | null;
         };
         /** TurnoverResult */
         TurnoverResult: {
@@ -1329,6 +2189,15 @@ export interface components {
             /** Context */
             ctx?: Record<string, never>;
         };
+        /** VorschlagOut */
+        VorschlagOut: {
+            /** Name */
+            name: string;
+            /** Category */
+            category?: string | null;
+            /** Quelle */
+            quelle: string;
+        };
         /** WasteSummary */
         WasteSummary: {
             /** Total Events */
@@ -1337,6 +2206,31 @@ export interface components {
             total_amount: number;
             /** By Product */
             by_product: components["schemas"]["ConsumptionByProduct"][];
+        };
+        /**
+         * ZuruecknehmenIn
+         * @description Eine Quittungszeile zuruecknehmen: genau eins von `posten_id` und `sache_id`.
+         *
+         *     Im Lagern-Lauf kommt der Stand vor der Buchung mit (`vorher_*` aus
+         *     `LagernOut`); im Einbuch-Lauf heisst Zuruecknehmen, dass das Ding wieder geht.
+         */
+        ZuruecknehmenIn: {
+            /** Posten Id */
+            posten_id?: number | null;
+            /** Sache Id */
+            sache_id?: number | null;
+            /** Vorher Platz Id */
+            vorher_platz_id?: number | null;
+            /** Vorher Verbleib */
+            vorher_verbleib?: string | null;
+            /** Vorher Grund */
+            vorher_grund?: string | null;
+        };
+        /** ZuruecknehmenOut */
+        ZuruecknehmenOut: {
+            /** Text */
+            text: string;
+            ding?: components["schemas"]["PlatzDingOut"] | null;
         };
     };
     responses: never;
@@ -1352,6 +2246,7 @@ export interface operations {
             query?: {
                 q?: string | null;
                 category?: string | null;
+                bereich?: string | null;
                 offset?: number;
                 limit?: number;
             };
@@ -1514,6 +2409,8 @@ export interface operations {
             query?: {
                 product_id?: number | null;
                 location?: string | null;
+                platz_id?: number | null;
+                bereich?: string | null;
                 only_positive?: boolean;
                 offset?: number;
                 limit?: number;
@@ -1801,6 +2698,39 @@ export interface operations {
             };
         };
     };
+    ausbuchen_sammel_api_stock_ausbuchen_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AusbuchenSammelRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsumptionEventOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     lookup_barcode_api_barcode__code__get: {
         parameters: {
             query?: never;
@@ -1836,6 +2766,7 @@ export interface operations {
         parameters: {
             query?: {
                 days?: number;
+                bereich?: string | null;
             };
             header?: never;
             path?: never;
@@ -1867,6 +2798,7 @@ export interface operations {
         parameters: {
             query?: {
                 days?: number;
+                bereich?: string | null;
             };
             header?: never;
             path?: never;
@@ -1896,7 +2828,9 @@ export interface operations {
     };
     expiry_forecast_api_stats_expiry_forecast_get: {
         parameters: {
-            query?: never;
+            query?: {
+                bereich?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1912,12 +2846,22 @@ export interface operations {
                     "application/json": components["schemas"]["ExpiryForecastItem"][];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     category_analytics_api_stats_categories_get: {
         parameters: {
             query?: {
                 days?: number;
+                bereich?: string | null;
             };
             header?: never;
             path?: never;
@@ -1949,6 +2893,7 @@ export interface operations {
         parameters: {
             query?: {
                 threshold_pct?: number;
+                bereich?: string | null;
             };
             header?: never;
             path?: never;
@@ -2069,6 +3014,8 @@ export interface operations {
                 status?: string | null;
                 category?: string | null;
                 sell_decision?: string | null;
+                bereich?: string;
+                abgegangen?: boolean;
                 offset?: number;
                 limit?: number;
             };
@@ -2147,26 +3094,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SellRecommendationOut"][];
-                };
-            };
-        };
-    };
-    seed_homelab_assets_api_electronics_homelab_seed_known_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ElectronicAssetOut"][];
                 };
             };
         };
@@ -2319,6 +3246,72 @@ export interface operations {
             };
         };
     };
+    abgang_buchen_api_electronics__asset_id__abgang_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                asset_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AbgangIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ElectronicAssetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    abgang_zuruecknehmen_api_electronics__asset_id__abgang_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                asset_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ElectronicAssetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     shopping_list_api_shopping_list_get: {
         parameters: {
             query?: {
@@ -2432,6 +3425,607 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bereiche_api_bereiche_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BereichOut"][];
+                };
+            };
+        };
+    };
+    liste_api_plaetze_get: {
+        parameters: {
+            query?: {
+                art?: string | null;
+                bereich?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatzOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    anlegen_api_plaetze_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlatzCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatzOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    per_kennung_api_plaetze_kennung__kennung__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kennung: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatzOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    inhalt_api_plaetze__platz_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                platz_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatzInhaltOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    aendern_api_plaetze__platz_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                platz_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlatzUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatzOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    loeschen_api_plaetze__platz_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                platz_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    shopfloor_api_shopfloor_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShopfloorOut"];
+                };
+            };
+        };
+    };
+    suche_api_suche_get: {
+        parameters: {
+            query: {
+                q: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SucheOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    einbuchen_api_laeufe_einbuchen_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EinbuchenIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EinbuchenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    abschluss_api_laeufe_abschluss_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AbschlussIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EinkaufOut"] | null;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    einkaeufe_api_einkaeufe_get: {
+        parameters: {
+            query?: {
+                bereich?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EinkaufOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    lagern_api_laeufe_lagern_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LagernIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LagernOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    einbuchen_zuruecknehmen_api_laeufe_einbuchen_zuruecknehmen_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ZuruecknehmenIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZuruecknehmenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    lagern_zuruecknehmen_api_laeufe_lagern_zuruecknehmen_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ZuruecknehmenIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZuruecknehmenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    foto_zeigen_api_sachen__sache_id__foto_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sache_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    foto_hochladen_api_sachen__sache_id__foto_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sache_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ElectronicAssetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    foto_entfernen_api_sachen__sache_id__foto_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sache_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    medien_titel_api_medien_titel_get: {
+        parameters: {
+            query: {
+                q: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TitelTrefferOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preise_api_preise_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreisOut"][];
                 };
             };
         };

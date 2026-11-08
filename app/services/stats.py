@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.domain import fifo_sort_key
 from app.models import ConsumptionEvent, Product, StockEntry
+from app.services.plaetze import ortstext
 
 # Gruende, die eine Buchung zu einem Verlust machen. Alles andere ist ein
 # regulaerer Abgang: ein neuer Grund wie "verschenkt" zaehlt damit nicht als
@@ -20,7 +21,12 @@ class StatsService:
     def __init__(self, db: Session):
         self.db = db
 
-    def consumption_by_product(self, days: int = 30) -> list[dict]:
+    @staticmethod
+    def _im_bereich(stmt, bereich: str | None):
+        """Auf einen Bereich einschraenken (app/bereiche.py); Product muss gejoint sein."""
+        return stmt.where(Product.bereich == bereich) if bereich else stmt
+
+    def consumption_by_product(self, days: int = 30, bereich: str | None = None) -> list[dict]:
         """Top consumed products in the last N days."""
         since = datetime.now(timezone.utc) - timedelta(days=days)
         stmt = (
@@ -37,7 +43,7 @@ class StatsService:
             .group_by(StockEntry.product_id, Product.name, ConsumptionEvent.unit)
             .order_by(func.sum(ConsumptionEvent.amount).desc())
         )
-        rows = self.db.execute(stmt).all()
+        rows = self.db.execute(self._im_bereich(stmt, bereich)).all()
         return [
             {
                 "product_id": r.product_id,
@@ -49,7 +55,7 @@ class StatsService:
             for r in rows
         ]
 
-    def waste_summary(self, days: int = 30) -> dict:
+    def waste_summary(self, days: int = 30, bereich: str | None = None) -> dict:
         """Summary of wasted items (reason=weggeworfen or abgelaufen)."""
         since = datetime.now(timezone.utc) - timedelta(days=days)
         stmt = (
@@ -69,7 +75,7 @@ class StatsService:
             .group_by(StockEntry.product_id, Product.name, ConsumptionEvent.unit)
             .order_by(func.sum(ConsumptionEvent.amount).desc())
         )
-        rows = self.db.execute(stmt).all()
+        rows = self.db.execute(self._im_bereich(stmt, bereich)).all()
         by_product = [
             {
                 "product_id": r.product_id,
@@ -86,13 +92,17 @@ class StatsService:
             "by_product": by_product,
         }
 
-    def expiry_forecast(self) -> list[dict]:
+    def expiry_forecast(self, bereich: str | None = None) -> list[dict]:
         """All stock entries sorted by MHD urgency."""
         stmt = (
             select(StockEntry)
             .options(joinedload(StockEntry.product))
             .where(StockEntry.quantity > 0)
         )
+        if bereich:
+            stmt = stmt.where(
+                StockEntry.product_id.in_(select(Product.id).where(Product.bereich == bereich))
+            )
         rows = self.db.execute(stmt).scalars().unique().all()
         today = date.today()
         result = []
@@ -118,11 +128,11 @@ class StatsService:
                 "mhd": entry.mhd,
                 "days_left": days_left,
                 "urgency": urgency,
-                "location": entry.location,
+                "location": ortstext(entry.platz),
             })
         return result
 
-    def get_category_analytics(self, days: int = 30) -> list[dict]:
+    def get_category_analytics(self, days: int = 30, bereich: str | None = None) -> list[dict]:
         """Verlustquote je Kategorie, gerechnet aus GEBUCHTEN Entsorgungen.
 
         Bis zum 2026-10-24 stand hier
@@ -174,7 +184,8 @@ class StatsService:
             .group_by(Product.category)
         )
         aktive = {
-            r.category or OHNE: r.anzahl for r in self.db.execute(active_stmt).all()
+            r.category or OHNE: r.anzahl
+            for r in self.db.execute(self._im_bereich(active_stmt, bereich)).all()
         }
 
         # --- Abgelaufen und noch im Regal (ohne Zeitfenster, das ist Bestand) ---
@@ -188,7 +199,8 @@ class StatsService:
             .group_by(Product.category)
         )
         abgelaufen = {
-            r.category or OHNE: r.anzahl for r in self.db.execute(expired_stmt).all()
+            r.category or OHNE: r.anzahl
+            for r in self.db.execute(self._im_bereich(expired_stmt, bereich)).all()
         }
 
         # --- Buchungen im Fenster, je (Kategorie, Einheit) und Verlust-Kennzeichen ---
@@ -220,7 +232,7 @@ class StatsService:
         mengen: dict[tuple[str, str], dict[str, float]] = {}
         buchungen: dict[str, int] = {}
         verluste: dict[str, int] = {}
-        for r in self.db.execute(buchung_stmt).all():
+        for r in self.db.execute(self._im_bereich(buchung_stmt, bereich)).all():
             cat = r.category or OHNE
             eintrag = mengen.setdefault(
                 (cat, r.unit), {"consumed": 0.0, "discarded": 0.0}
@@ -371,11 +383,13 @@ class StatsService:
         unit = product.min_stock_unit or product.default_unit
         return totals.get((product.id, unit), 0.0), unit
 
-    def low_stock(self, threshold_pct: int = 100) -> list[dict]:
+    def low_stock(self, threshold_pct: int = 100, bereich: str | None = None) -> list[dict]:
         """Produkte, deren Gesamtmenge unter threshold_pct % des min_stock liegt."""
         totals = self._totals_by_product_unit()
 
         products_stmt = select(Product).where(Product.min_stock.is_not(None), Product.min_stock > 0)
+        if bereich:
+            products_stmt = products_stmt.where(Product.bereich == bereich)
         result = []
         for product in self.db.execute(products_stmt).scalars().all():
             qty, unit = self._qty_in_reference_unit(product, totals)

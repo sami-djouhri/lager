@@ -19,6 +19,7 @@ def _product_out(p: Product) -> ProductOut:
     return ProductOut(
         id=p.id,
         name=p.name,
+        bereich=p.bereich,
         barcode=p.barcode,
         category=p.category,
         default_unit=p.default_unit,
@@ -39,15 +40,18 @@ def _product_out(p: Product) -> ProductOut:
 def list_products(
     q: str | None = None,
     category: str | None = None,
+    bereich: str | None = None,
     offset: int = Query(0, ge=0),
     limit: int = Query(200, ge=1, le=MAX_PAGE_LIMIT),
     db: Session = Depends(get_db),
 ):
     svc = ProductService(db)
     if q:
-        products, total = svc.search(q, offset=offset, limit=limit)
+        products, total = svc.search(q, offset=offset, limit=limit, bereich=bereich)
     else:
-        products, total = svc.list_all(category=category, offset=offset, limit=limit)
+        products, total = svc.list_all(
+            category=category, offset=offset, limit=limit, bereich=bereich
+        )
     return Page[ProductOut](
         items=[_product_out(p) for p in products],
         total=total,

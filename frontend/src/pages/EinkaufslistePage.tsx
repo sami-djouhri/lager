@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, fehlertext } from '../api';
-import type { ShoppingSuggestionOut } from '../types';
+import type { Page, ProductOut, ShoppingSuggestionOut } from '../types';
+import { weg } from '../bereich/kontext';
 import MealPlanModal from '../components/MealPlanModal';
 import LoadError from '../components/LoadError';
 import Icon from '../components/Icon';
@@ -28,7 +29,7 @@ const REASON_LABELS: Record<Reason, string> = {
   weekly_average: 'Wochenbedarf',
   expired: 'Abgelaufen, Ersatz kaufen',
   expiring_soon: 'Bald ablaufend',
-  sonstiges: 'Weitere Vorschlaege',
+  sonstiges: 'Weitere Vorschläge',
 };
 
 const REASON_COLORS: Record<Reason, string> = {
@@ -46,13 +47,20 @@ export default function EinkaufslistePage() {
   const [loading, setLoading] = useState(true);
   const [showMealPlan, setShowMealPlan] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Produkt -> Bereich, damit „Einbuchen" im richtigen Bereich landet. Die
+  // Liste selbst bleibt uebergreifend, bis sie eine eigene App wird.
+  const [bereichVon, setBereichVon] = useState<Record<number, string>>({});
 
   async function load() {
     setLoading(true);
     setError(null);
     try {
-      const data = await api.get<ShoppingSuggestionOut[]>('/shopping-list');
+      const [data, produkte] = await Promise.all([
+        api.get<ShoppingSuggestionOut[]>('/shopping-list'),
+        api.get<Page<ProductOut>>('/products?limit=500'),
+      ]);
       setItems(data);
+      setBereichVon(Object.fromEntries(produkte.items.map((p) => [p.id, p.bereich ?? 'lebensmittel'])));
     } catch (err) {
       setError(fehlertext(err));
     } finally {
@@ -137,7 +145,7 @@ export default function EinkaufslistePage() {
                     </span>
                   </div>
                   <Link
-                    to={`/einbuchen?product=${encodeURIComponent(item.product_name)}`}
+                    to={`${weg(bereichVon[item.product_id] ?? 'lebensmittel', 'einbuchen')}?product=${encodeURIComponent(item.product_name)}`}
                     className="btn btn-sm btn-primary"
                     style={{ flexShrink: 0 }}
                   >

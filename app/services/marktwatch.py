@@ -11,17 +11,17 @@ import httpx
 
 from app.config import settings
 from app.domain import DomainError
-from app.models import ElectronicAsset
+from app.models import Sache
 
 
 class MarketValueResult:
-    def __init__(self, asset: ElectronicAsset, samples: int, from_cache: bool) -> None:
+    def __init__(self, asset: Sache, samples: int, from_cache: bool) -> None:
         self.asset = asset
         self.samples = samples
         self.from_cache = from_cache
 
 
-def _cache_fresh(asset: ElectronicAsset) -> bool:
+def _cache_fresh(asset: Sache) -> bool:
     if asset.market_value_at is None:
         return False
     at = asset.market_value_at
@@ -31,7 +31,7 @@ def _cache_fresh(asset: ElectronicAsset) -> bool:
     return age < timedelta(minutes=settings.MARKTWATCH_CACHE_TTL_MINUTES)
 
 
-def refresh_market_value(asset: ElectronicAsset, force: bool = False) -> MarketValueResult:
+def refresh_market_value(asset: Sache, force: bool = False) -> MarketValueResult:
     """Holt den Median-Marktpreis via marktwatch und schreibt ihn ans Asset.
 
     Commit macht der Aufrufer (Route). Wirft DomainError, wenn marktwatch

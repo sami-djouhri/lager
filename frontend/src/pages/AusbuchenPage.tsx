@@ -4,6 +4,8 @@ import { api } from '../api';
 import type { ProductOut, AvailabilityOut, ConsumeRequest, BarcodeResult, Page } from '../types';
 import ProductSelect from '../components/ProductSelect';
 import BarcodeInput from '../components/BarcodeInput';
+import { useBereich, weg } from '../bereich/kontext';
+import Kopf from '../bereich/Kopf';
 
 const REASONS = [
   { value: 'verbraucht', label: 'Verbraucht' },
@@ -15,6 +17,7 @@ const UNIT_LABELS: Record<string, string> = { g: 'g', ml: 'ml', piece: 'Stk' };
 
 export default function AusbuchenPage() {
   const navigate = useNavigate();
+  const { schluessel } = useBereich();
   const [searchParams] = useSearchParams();
   const preProductId = searchParams.get('product_id');
 
@@ -97,7 +100,7 @@ export default function AusbuchenPage() {
       setToast({ msg: `${amount} ${UNIT_LABELS[product.default_unit] ?? product.default_unit} ${product.name} ausgebucht`, type: 'success' });
       setTimeout(() => {
         setToast(null);
-        navigate('/bestand');
+        navigate(weg(schluessel, 'bestand'));
       }, 1200);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Fehler beim Ausbuchen';
@@ -110,14 +113,14 @@ export default function AusbuchenPage() {
 
   return (
     <div className="page">
-      <h1 className="page-title">Ausbuchen</h1>
+      <Kopf titel="Ausbuchen" />
 
       {toast && <div className={`toast ${toast.type}`}>{toast.msg}</div>}
 
       <form onSubmit={handleSubmit}>
         <div className="form-group">
           <label className="form-label">Produkt</label>
-          <ProductSelect onSelect={handleSelectProduct} />
+          <ProductSelect bereich={schluessel} onSelect={handleSelectProduct} />
           <div style={{ marginTop: 8 }}>
             <BarcodeInput
               onResult={handleBarcodeResult}

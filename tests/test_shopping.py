@@ -123,3 +123,20 @@ def test_forecast_unknown_kind_is_422(client):
 
 def test_shopping_list_empty_when_no_products(client):
     assert client.get("/api/shopping-list").json() == []
+
+
+def test_weggeworfenes_ist_kein_wochenverbrauch(client):
+    """2026-11-08: der ganze Vorrat als abgelaufen ausgebucht ergab 20 Mal
+    "reicht keine Woche". Nur Verbrauchtes zaehlt zum Wochenbedarf."""
+    eier = _create_product(client, "Eier", default_unit="piece")
+    milch = _create_product(client, "Milch", default_unit="ml")
+    posten = client.post("/api/stock", json={"product_id": eier, "quantity": 10, "unit": "piece"}).json()
+    antwort = client.post("/api/stock/ausbuchen", json={"entry_ids": [posten["id"]], "reason": "abgelaufen"})
+    assert antwort.status_code == 200, antwort.text
+    client.post("/api/stock", json={"product_id": milch, "quantity": 1000, "unit": "ml"})
+    antwort = client.post("/api/stock/consume", json={"product_id": milch, "amount": 1000, "unit": "ml"})
+    assert antwort.status_code == 200, antwort.text
+
+    items = client.get("/api/shopping-list").json()
+    woche = {i["product_id"] for i in items if i["reason"] == "weekly_average"}
+    assert woche == {milch}

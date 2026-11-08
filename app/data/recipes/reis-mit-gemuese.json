@@ -1,0 +1,10 @@
+{
+  "id": "reis-mit-gemuese",
+  "name": "Reis mit Gemüse",
+  "servings_default": 2,
+  "ingredients": [
+    {"product_name": "Reis", "amount_per_serving": 80, "unit": "g"},
+    {"product_name": "Karotten", "amount_per_serving": 100, "unit": "g"},
+    {"product_name": "Sojasauce", "amount_per_serving": 15, "unit": "ml"}
+  ]
+}

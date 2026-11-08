@@ -7,7 +7,12 @@ from sqlalchemy.orm import Session
 
 from app.db import begin_immediate, get_db
 from app.events import INVENTORY_LOW_STOCK, INVENTORY_UPDATED, emit
-from app.schemas import ConsumeRecipeRequest, ConsumeRequest, ConsumptionEventOut
+from app.schemas import (
+    AusbuchenSammelRequest,
+    ConsumeRecipeRequest,
+    ConsumeRequest,
+    ConsumptionEventOut,
+)
 from app.services.stock import StockService, check_low_stock
 
 router = APIRouter(prefix="/api/stock", tags=["consume"])
@@ -69,4 +74,15 @@ def consume_recipe(body: ConsumeRecipeRequest, db: Session = Depends(get_db)):
             ref_id=ingredients[0].get("ref_id") if ingredients else None,
         )
     _emit_consume_events(db, {ing["product_id"] for ing in ingredients})
+    return [ConsumptionEventOut.model_validate(e) for e in events]
+
+
+@router.post("/ausbuchen", response_model=list[ConsumptionEventOut])
+def ausbuchen_sammel(body: AusbuchenSammelRequest, db: Session = Depends(get_db)):
+    """Mehrfachauswahl im Bestand: jeden Posten ganz, alles oder nichts."""
+    svc = StockService(db)
+    with begin_immediate(db):
+        events = svc.ausbuchen_ganz(body.entry_ids, reason=body.reason, source=body.source)
+        produkte = {svc.get_entry(e.stock_entry_id).product_id for e in events}
+    _emit_consume_events(db, produkte)
     return [ConsumptionEventOut.model_validate(e) for e in events]

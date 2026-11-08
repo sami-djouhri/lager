@@ -33,6 +33,7 @@ fi
 docker run --rm --user 0:0 \
   -v "$PWD/tests:/app/tests:ro" \
   -v "$PWD/app:/app/app:ro" \
+  -v "$PWD/migrations:/app/migrations:ro" \
   -w /app \
   -e PYTHONPATH=/tmp/p:/app \
   "$IMAGE" \

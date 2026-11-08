@@ -46,6 +46,17 @@ class Settings(BaseSettings):
     # Marktwert >= Threshold + nicht in aktiver Nutzung => Verkaufsempfehlung (Portfolio)
     RESALE_THRESHOLD_EUR: float = 50.0
 
+    # medien-Katalog (Bereich Filme & Medien, Stufe 5). Adresse steht im
+    # Homelab-Override, der Schluessel NUR in der .env (Gegenstueck in medien:
+    # secrets/lager_token, beide angelegt von scripts/medien-schluessel.sh).
+    # Leer => der Bereich steht ausgegraut mit einem Satz.
+    MEDIEN_BASE_URL: str = ""
+    MEDIEN_TOKEN: str = ""
+    MEDIEN_TIMEOUT_SEC: float = 5.0
+    # Wohin ein Verweis im Browser fuehrt (Titel in medien). Der Dienst selbst
+    # ruft ueber MEDIEN_BASE_URL, der Browser erreicht nur den .home-Namen.
+    MEDIEN_WEB_URL: str = "https://medien.home.arpa"
+
     # Event Spine (life-ops-api POST /api/events)
     LIFE_OPS_URL: str = "http://life-ops-api:8000"
     EVENT_SOURCE: str = "lager"

@@ -97,8 +97,8 @@ _ZAEHLER: tuple[tuple[str, str, str], ...] = (
     ),
     (
         "lager_geraete",
-        "Erfasste Elektronik-Posten (alle Mandanten).",
-        "SELECT COUNT(*) FROM electronic_asset",
+        "Erfasste Stuecke im Bereich Technik & Sachen ohne Abgaenge (alle Mandanten).",
+        "SELECT COUNT(*) FROM sache WHERE bereich = 'technik' AND abgang IS NULL",
     ),
     (
         "lager_mandanten",

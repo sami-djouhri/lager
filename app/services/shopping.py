@@ -5,10 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.models import ConsumptionEvent, Product, StockEntry
+from app.services.stats import VERLUST_GRUENDE
 
 REASON_LOW_STOCK = "low_stock"
 REASON_WEEKLY_AVERAGE = "weekly_average"
@@ -149,7 +150,15 @@ class ShoppingService:
             )
             .join(StockEntry, ConsumptionEvent.stock_entry_id == StockEntry.id)
             .join(Product, StockEntry.product_id == Product.id)
-            .where(ConsumptionEvent.consumed_at >= since)
+            .where(
+                ConsumptionEvent.consumed_at >= since,
+                # Weggeworfenes ist kein Verbrauch. Am 2026-11-08 wurde der
+                # ganze Vorrat als abgelaufen ausgebucht, und die Einkaufsliste
+                # zeigte danach 20 Mal "reicht keine Woche" mit Mengen wie
+                # 2,33 Eier (zehn weggeworfene Eier mal 7/30).
+                or_(ConsumptionEvent.reason.is_(None),
+                    ConsumptionEvent.reason.notin_(VERLUST_GRUENDE)),
+            )
             .group_by(StockEntry.product_id, Product.name, ConsumptionEvent.unit)
         )
         rows = self.db.execute(stmt).all()

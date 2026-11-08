@@ -6,6 +6,7 @@ import Verfall from '../components/Verfall';
 import Icon from '../components/Icon';
 import LoadError from '../components/LoadError';
 import { menge } from '../einheiten';
+import { useBereich, weg } from '../bereich/kontext';
 
 interface Summary {
   products: number;
@@ -36,6 +37,8 @@ function posten(n: number): string {
 }
 
 export default function DashboardPage() {
+  const { schluessel, bereich } = useBereich();
+  const titel = bereich?.name ?? 'Lager';
   const [forecast, setForecast] = useState<ExpiryForecastItem[]>([]);
   const [lowStock, setLowStock] = useState<LowStockItem[]>([]);
   const [summary, setSummary] = useState<Summary>({ products: 0, stockEntries: 0, expiringSoon: 0 });
@@ -48,11 +51,12 @@ export default function DashboardPage() {
     try {
       // limit=1: von /stock und /products braucht das Dashboard nur `total`
       // fuer die Kachel. Vorher zog es dafuer je 500 vollstaendige Datensaetze.
+      const b = `bereich=${encodeURIComponent(schluessel)}`;
       const [fc, stock, products, low] = await Promise.all([
-        api.get<ExpiryForecastItem[]>('/stats/expiry-forecast'),
-        api.get<Page<StockEntryOut>>('/stock?only_positive=true&limit=1'),
-        api.get<Page<ProductOut>>('/products?limit=1'),
-        api.get<LowStockItem[]>('/stats/low-stock'),
+        api.get<ExpiryForecastItem[]>(`/stats/expiry-forecast?${b}`),
+        api.get<Page<StockEntryOut>>(`/stock?only_positive=true&limit=1&${b}`),
+        api.get<Page<ProductOut>>(`/products?limit=1&${b}`),
+        api.get<LowStockItem[]>(`/stats/low-stock?${b}`),
       ]);
       setForecast(fc);
       setLowStock(low);
@@ -66,7 +70,7 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [schluessel]);
 
   useEffect(() => {
     load();
@@ -77,7 +81,7 @@ export default function DashboardPage() {
   if (error) {
     return (
       <div className="page">
-        <h1 className="page-title">Lager</h1>
+        <h1 className="page-title">{titel}</h1>
         <LoadError was="Der Bestand" fehler={error} onRetry={load} />
       </div>
     );
@@ -89,23 +93,22 @@ export default function DashboardPage() {
 
   return (
     <div className={`page${lowStock.length > 0 ? ' page-breit' : ''}`}>
-      <h1 className="page-title">Lager</h1>
+      <h1 className="page-title">{titel}</h1>
 
       <div className={`buch${lowStock.length > 0 ? ' zweispaltig' : ''}`}>
         <div className="spalte-voll">
           <div className="quick-actions">
-            <Link to="/einbuchen" className="quick-action">
+            <Link to={weg(schluessel, 'lauf')} className="quick-action">
               <span className="action-icon"><Icon name="plus" /></span>
               Einbuchen
             </Link>
-            <Link to="/ausbuchen" className="quick-action">
+            <Link to={weg(schluessel, 'ausbuchen')} className="quick-action">
               <span className="action-icon"><Icon name="minus" /></span>
               Ausbuchen
             </Link>
-            {/* Statt einer zweiten Tuer zu /einbuchen (dort sitzt der Scanner
-                ohnehin) hier der einzige Weg zur Statistik: die Seite war sonst
-                von nirgends verlinkt. */}
-            <Link to="/statistik" className="quick-action">
+            {/* Statt einer zweiten Tuer zum Einbuchen hier der einzige Weg zur
+                Statistik: die Seite war sonst von nirgends verlinkt. */}
+            <Link to={weg(schluessel, 'statistik')} className="quick-action">
               <span className="action-icon"><Icon name="balken" /></span>
               Statistik
             </Link>
@@ -143,6 +146,17 @@ export default function DashboardPage() {
                   {extremwert(rot, 'vorbei') ? `, ${extremwert(rot, 'vorbei')}` : ''}
                 </span>
               </div>
+              {/* Nur wenn wirklich etwas VORBEI ist: kritisch (noch 0-2 Tage)
+                  gehoert gegessen, nicht ausgebucht. */}
+              {rot.some((i) => i.urgency === 'abgelaufen') && (
+                <Link
+                  to={`${weg(schluessel, 'bestand')}?auswahl=abgelaufen`}
+                  className="expiry-item"
+                  style={{ justifyContent: 'center', fontWeight: 600, fontSize: '.85rem' }}
+                >
+                  {rot.filter((i) => i.urgency === 'abgelaufen').length} abgelaufene auf einmal ausbuchen
+                </Link>
+              )}
               {rot.map((item, i) => (
                 <div key={i} className="expiry-item">
                   <div className="expiry-item-info">
@@ -203,7 +217,7 @@ export default function DashboardPage() {
                 </div>
               ))}
               {gruen.length > 5 && (
-                <Link to="/bestand" className="expiry-item" style={{ justifyContent: 'center', fontWeight: 600, fontSize: '.85rem' }}>
+                <Link to={weg(schluessel, 'bestand')} className="expiry-item" style={{ justifyContent: 'center', fontWeight: 600, fontSize: '.85rem' }}>
                   Alle {gruen.length} im Bestand ansehen
                 </Link>
               )}
@@ -214,8 +228,19 @@ export default function DashboardPage() {
             <div className="empty-state">
               <div className="empty-state-icon"><Icon name="kiste" /></div>
               <div className="empty-state-text">
-                Noch nichts eingebucht. Der erste Posten kommt über Einbuchen
-                herein, mit Scanner oder von Hand.
+                {summary.products === 0 ? (
+                  <>
+                    Noch keine Produkte in diesem Bereich. Beim{' '}
+                    <Link to={weg(schluessel, 'lauf')}>Einbuchen</Link> entstehen sie gleich mit:
+                    ein unbekannter Strichcode fragt nach dem Namen.
+                  </>
+                ) : (
+                  <>
+                    Nichts auf Lager. Posten kommen über{' '}
+                    <Link to={weg(schluessel, 'lauf')}>Einbuchen</Link> herein, mit
+                    Scanner oder von Hand.
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -248,7 +273,7 @@ export default function DashboardPage() {
                     </span>
                   </div>
                   <Link
-                    to={`/einbuchen?product=${encodeURIComponent(item.product_name)}`}
+                    to={`${weg(schluessel, 'einbuchen')}?product=${encodeURIComponent(item.product_name)}`}
                     className="btn btn-sm btn-secondary"
                     style={{ flexShrink: 0 }}
                   >

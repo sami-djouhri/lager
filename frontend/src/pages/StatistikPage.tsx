@@ -5,12 +5,17 @@ import type { ConsumptionByProduct, WasteSummary, ExpiryForecastItem } from '../
 import StatBar from '../components/StatBar';
 import ExpiryBadge from '../components/ExpiryBadge';
 import CategoryAnalytics from '../components/CategoryAnalytics';
+import { fristName, useBereich } from '../bereich/kontext';
+import Kopf from '../bereich/Kopf';
 import LoadError from '../components/LoadError';
 
 const TABS = ['verbrauch', 'verschwendung', 'prognose', 'kategorien'] as const;
 type Tab = (typeof TABS)[number];
 
 export default function StatistikPage() {
+  const { schluessel, bereich } = useBereich();
+  const b = `bereich=${encodeURIComponent(schluessel)}`;
+  const frist = fristName(bereich);
   // Der Reiter steht in der Adresse, nicht nur im Zustand der Seite. Drei
   // Gruende, und der dritte ist der Anlass: ein Reiter laesst sich sonst nicht
   // verlinken, er ueberlebt kein Neuladen, und er ist von aussen nicht
@@ -48,18 +53,18 @@ export default function StatistikPage() {
     setError(null);
     try {
       if (tab === 'verbrauch') {
-        setConsumption(await api.get<ConsumptionByProduct[]>('/stats/consumption?days=30'));
+        setConsumption(await api.get<ConsumptionByProduct[]>(`/stats/consumption?days=30&${b}`));
       } else if (tab === 'verschwendung') {
-        setWaste(await api.get<WasteSummary>('/stats/waste?days=30'));
+        setWaste(await api.get<WasteSummary>(`/stats/waste?days=30&${b}`));
       } else {
-        setForecast(await api.get<ExpiryForecastItem[]>('/stats/expiry-forecast'));
+        setForecast(await api.get<ExpiryForecastItem[]>(`/stats/expiry-forecast?${b}`));
       }
     } catch (err) {
       setError(fehlertext(err));
     } finally {
       setLoading(false);
     }
-  }, [tab]);
+  }, [tab, b]);
 
   useEffect(() => {
     load();
@@ -75,29 +80,33 @@ export default function StatistikPage() {
 
   return (
     <div className="page">
-      <h1 className="page-title">Statistik</h1>
+      <Kopf titel="Statistik" />
 
       <div className="tabs">
         <button
           className={`tab${tab === 'verbrauch' ? ' active' : ''}`}
+          aria-pressed={tab === 'verbrauch'}
           onClick={() => setTab('verbrauch')}
         >
           Verbrauch
         </button>
         <button
           className={`tab${tab === 'verschwendung' ? ' active' : ''}`}
+          aria-pressed={tab === 'verschwendung'}
           onClick={() => setTab('verschwendung')}
         >
           Verschwendung
         </button>
         <button
           className={`tab${tab === 'prognose' ? ' active' : ''}`}
+          aria-pressed={tab === 'prognose'}
           onClick={() => setTab('prognose')}
         >
-          MHD-Prognose
+          {frist}-Prognose
         </button>
         <button
           className={`tab${tab === 'kategorien' ? ' active' : ''}`}
+          aria-pressed={tab === 'kategorien'}
           onClick={() => setTab('kategorien')}
         >
           Kategorien
@@ -172,7 +181,7 @@ export default function StatistikPage() {
             <div>
               {forecast.length === 0 ? (
                 <div className="empty-state">
-                  <div className="empty-state-text">Keine MHD-Daten vorhanden</div>
+                  <div className="empty-state-text">Keine Fristen erfasst</div>
                 </div>
               ) : (
                 forecast.map((item, i) => (
@@ -182,7 +191,7 @@ export default function StatistikPage() {
                       <span className="expiry-item-detail">
                         {item.quantity} {item.unit} &middot; {item.location}
                         {item.mhd && (
-                          <> &middot; MHD: {new Date(item.mhd).toLocaleDateString('de-DE')}</>
+                          <> &middot; {frist}: {new Date(item.mhd).toLocaleDateString('de-DE')}</>
                         )}
                       </span>
                     </div>
@@ -201,7 +210,7 @@ export default function StatistikPage() {
                   Verlustanalyse nach Kategorie (30 Tage)
                 </div>
               </div>
-              <CategoryAnalytics />
+              <CategoryAnalytics bereich={schluessel} />
             </div>
           )}
         </>

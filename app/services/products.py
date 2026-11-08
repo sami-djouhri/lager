@@ -5,6 +5,7 @@ from __future__ import annotations
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
+from app.bereiche import pruefe_vorrat
 from app.domain import DomainError
 from app.models import Product, StockEntry
 from app.schemas import ProductCreate, ProductUpdate
@@ -19,8 +20,11 @@ class ProductService:
         category: str | None = None,
         offset: int = 0,
         limit: int = 200,
+        bereich: str | None = None,
     ) -> tuple[list[Product], int]:
         stmt = select(Product)
+        if bereich:
+            stmt = stmt.where(Product.bereich == bereich)
         if category:
             stmt = stmt.where(Product.category == category)
         stmt = stmt.order_by(Product.name)
@@ -32,18 +36,18 @@ class ProductService:
         q: str,
         offset: int = 0,
         limit: int = 200,
+        bereich: str | None = None,
     ) -> tuple[list[Product], int]:
         pattern = f"%{q}%"
-        stmt = (
-            select(Product)
-            .where(
-                or_(
-                    Product.name.ilike(pattern),
-                    Product.synonyms_json.ilike(pattern),
-                )
+        stmt = select(Product).where(
+            or_(
+                Product.name.ilike(pattern),
+                Product.synonyms_json.ilike(pattern),
             )
-            .order_by(Product.name)
         )
+        if bereich:
+            stmt = stmt.where(Product.bereich == bereich)
+        stmt = stmt.order_by(Product.name)
         rows = list(self.db.execute(stmt).scalars().all())
         return rows[offset : offset + limit], len(rows)
 
@@ -73,6 +77,7 @@ class ProductService:
 
         product = Product(
             name=data.name,
+            bereich=pruefe_vorrat(data.bereich),
             barcode=data.barcode,
             category=data.category,
             default_unit=data.default_unit,
@@ -115,6 +120,9 @@ class ProductService:
                         {"existing_id": bc_existing.id},
                     )
             product.barcode = data.barcode
+
+        if data.bereich is not None:
+            product.bereich = pruefe_vorrat(data.bereich)
 
         if data.category is not None:
             product.category = data.category

@@ -38,7 +38,7 @@ def verbrauchte_produkte(db_session):
     db_session.flush()
 
     posten = [
-        StockEntry(product_id=p.id, quantity=1000.0, unit="g", location="Lager")
+        StockEntry(product_id=p.id, quantity=1000.0, unit="g")
         for p in produkte
     ]
     db_session.add_all(posten)

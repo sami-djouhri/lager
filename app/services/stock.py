@@ -8,8 +8,9 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.domain import DomainError, assert_unit_compatible, fifo_sort_key
-from app.models import ConsumptionEvent, Product, StockEntry
+from app.models import ConsumptionEvent, Platz, Product, StockEntry
 from app.schemas import StockEntryCreate, StockEntryUpdate
+from app.services.plaetze import PlatzService, protokolliere
 
 
 def check_low_stock(db: Session, product_id: int) -> dict | None:
@@ -48,15 +49,26 @@ class StockService:
         self,
         product_id: int | None = None,
         location: str | None = None,
+        platz_id: int | None = None,
         only_positive: bool = True,
         offset: int = 0,
         limit: int = 200,
+        bereich: str | None = None,
     ) -> tuple[list[StockEntry], int]:
         stmt = select(StockEntry)
+        if bereich:
+            stmt = stmt.join(Product, StockEntry.product_id == Product.id).where(
+                Product.bereich == bereich
+            )
         if product_id is not None:
             stmt = stmt.where(StockEntry.product_id == product_id)
         if location:
-            stmt = stmt.where(StockEntry.location == location)
+            # Alter Filter nach Ortstext: Name des Platzes.
+            stmt = stmt.where(
+                StockEntry.platz_id.in_(select(Platz.id).where(Platz.name == location))
+            )
+        if platz_id is not None:
+            stmt = stmt.where(StockEntry.platz_id == platz_id)
         if only_positive:
             stmt = stmt.where(StockEntry.quantity > 0)
         rows = sorted(self.db.execute(stmt).scalars().all(), key=fifo_sort_key)
@@ -98,8 +110,10 @@ class StockService:
             unit=data.unit,
             mhd=data.mhd,
             purchase_date=data.purchase_date,
-            location=data.location,
+            platz_id=self._platz_id(data.platz_id, data.location),
             lot_note=data.lot_note,
+            preis=data.preis,
+            eingangsmenge=data.quantity,
         )
         self.db.add(entry)
         self.db.flush()
@@ -119,12 +133,23 @@ class StockService:
             entry.mhd = data.mhd
         if data.purchase_date is not None:
             entry.purchase_date = data.purchase_date
-        if data.location is not None:
-            entry.location = data.location
+        gesetzt = data.model_fields_set
+        if "platz_id" in gesetzt or data.location is not None:
+            neu = self._platz_id(data.platz_id, data.location)
+            protokolliere(self.db, "posten", entry.id, "platz_id", entry.platz_id, neu)
+            entry.platz_id = neu
         if data.lot_note is not None:
             entry.lot_note = data.lot_note
         if data.opened_at is not None:
             entry.opened_at = data.opened_at
+        if "preis" in gesetzt:
+            protokolliere(self.db, "posten", entry.id, "preis", entry.preis, data.preis)
+            entry.preis = data.preis
+        # Wer die Menge im Lauf korrigiert, bevor etwas verbraucht ist, meint
+        # die Eingangsmenge. Danach bleibt sie stehen: sonst rechnete der
+        # Preis je Einheit mit dem Rest statt mit dem Eingang.
+        if data.quantity is not None and not entry.consumption_events:
+            entry.eingangsmenge = entry.quantity
         self.db.flush()
         return entry
 
@@ -187,6 +212,45 @@ class StockService:
         self.db.flush()
         return events
 
+    def ausbuchen_ganz(
+        self,
+        entry_ids: list[int],
+        reason: str,
+        source: str = "manual",
+    ) -> list[ConsumptionEvent]:
+        """Bucht jeden genannten Posten mit seinem ganzen Rest aus.
+
+        Alles oder nichts: ist ein Posten unbekannt (auch: eines anderen
+        Mandanten) oder schon leer, wird keiner gebucht. Eine veraltete
+        Auswahl, etwa weil ein zweites Geraet inzwischen verbraucht hat, soll
+        neu geladen werden, statt still einen Teil zu buchen.
+        """
+        ids = list(dict.fromkeys(entry_ids))
+        entries = {e.id: e for e in (self.get_entry(i) for i in ids) if e is not None}
+        fehlen = [i for i in ids if i not in entries]
+        leer = [i for i in ids if i in entries and entries[i].quantity <= 0]
+        if fehlen or leer:
+            raise DomainError(
+                "Auswahl ist nicht mehr aktuell, bitte neu laden",
+                {"fehlen": fehlen, "leer": leer},
+            )
+
+        events: list[ConsumptionEvent] = []
+        for i in ids:
+            entry = entries[i]
+            event = ConsumptionEvent(
+                stock_entry_id=entry.id,
+                amount=entry.quantity,
+                unit=entry.unit,
+                reason=reason,
+                source=source,
+            )
+            entry.quantity = 0
+            self.db.add(event)
+            events.append(event)
+        self.db.flush()
+        return events
+
     def consume_for_recipe(
         self,
         recipe_ingredients: list[dict],
@@ -225,6 +289,14 @@ class StockService:
         return all_events
 
     # ----- internal -----
+
+    def _platz_id(self, platz_id: int | None, location: str | None) -> int | None:
+        """`platz_id` gewinnt; sonst der alte Ortstext; sonst Shopfloor."""
+        svc = PlatzService(self.db)
+        if platz_id is not None:
+            return svc.get(platz_id).id
+        platz = svc.aus_ortstext(location)
+        return platz.id if platz else None
 
     def _sorted_entries(self, product_id: int, unit: str) -> list[StockEntry]:
         stmt = select(StockEntry).where(

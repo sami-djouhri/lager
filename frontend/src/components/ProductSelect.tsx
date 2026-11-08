@@ -3,11 +3,13 @@ import { api } from '../api';
 import type { ProductOut, Page } from '../types';
 
 interface Props {
+  /** Nur Produkte dieses Bereichs vorschlagen. */
+  bereich?: string;
   onSelect: (product: ProductOut) => void;
   placeholder?: string;
 }
 
-export default function ProductSelect({ onSelect, placeholder = 'Produkt suchen...' }: Props) {
+export default function ProductSelect({ bereich, onSelect, placeholder = 'Produkt suchen...' }: Props) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<ProductOut[]>([]);
   const [open, setOpen] = useState(false);
@@ -21,7 +23,8 @@ export default function ProductSelect({ onSelect, placeholder = 'Produkt suchen.
     }
     const timer = setTimeout(async () => {
       try {
-        const data = await api.get<Page<ProductOut>>(`/products?q=${encodeURIComponent(query)}`);
+        const filter = bereich ? `&bereich=${encodeURIComponent(bereich)}` : '';
+        const data = await api.get<Page<ProductOut>>(`/products?q=${encodeURIComponent(query)}${filter}`);
         setResults(data.items);
         setOpen(true);
         setHighlighted(-1);
@@ -30,7 +33,7 @@ export default function ProductSelect({ onSelect, placeholder = 'Produkt suchen.
       }
     }, 200);
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, bereich]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {

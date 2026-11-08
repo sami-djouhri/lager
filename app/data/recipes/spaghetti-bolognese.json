@@ -1,0 +1,11 @@
+{
+  "id": "spaghetti-bolognese",
+  "name": "Spaghetti Bolognese",
+  "servings_default": 4,
+  "ingredients": [
+    {"product_name": "Spaghetti", "amount_per_serving": 100, "unit": "g"},
+    {"product_name": "Hackfleisch", "amount_per_serving": 125, "unit": "g"},
+    {"product_name": "Tomaten", "amount_per_serving": 100, "unit": "g"},
+    {"product_name": "Zwiebel", "amount_per_serving": 50, "unit": "g"}
+  ]
+}

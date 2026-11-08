@@ -5,11 +5,13 @@ import type { ProductOut, StockEntryCreate, BarcodeResult, ProductCreate, Page }
 import ProductSelect from '../components/ProductSelect';
 import QuantityInput from '../components/QuantityInput';
 import BarcodeInput from '../components/BarcodeInput';
-
-const LOCATIONS = ['Vorratskammer', 'Kühlschrank', 'Tiefkühler'];
+import { fristName, useBereich, weg } from '../bereich/kontext';
+import Kopf from '../bereich/Kopf';
+import PlatzWahl from '../components/PlatzWahl';
 
 export default function EinbuchenPage() {
   const navigate = useNavigate();
+  const { schluessel, bereich } = useBereich();
   const [searchParams] = useSearchParams();
   const preselectedName = searchParams.get('product') ?? '';
 
@@ -17,7 +19,7 @@ export default function EinbuchenPage() {
   const [quantity, setQuantity] = useState<number>(0);
   const [unit, setUnit] = useState('g');
   const [mhd, setMhd] = useState('');
-  const [location, setLocation] = useState('Vorratskammer');
+  const [platzId, setPlatzId] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: string } | null>(null);
   const [barcodeResult, setBarcodeResult] = useState<BarcodeResult | null>(null);
@@ -35,7 +37,7 @@ export default function EinbuchenPage() {
   function handleBarcodeResult(result: BarcodeResult) {
     if (result.source === 'db' && result.product) {
       // Product exists in DB - load it as ProductOut
-      api.get<Page<ProductOut>>(`/products?q=${encodeURIComponent(result.product.name)}`)
+      api.get<Page<ProductOut>>(`/products?q=${encodeURIComponent(result.product.name)}&bereich=${encodeURIComponent(schluessel)}`)
         .then(({ items: products }) => {
           const match = products.find(p => p.barcode === result.product!.barcode);
           if (match) {
@@ -56,6 +58,7 @@ export default function EinbuchenPage() {
     try {
       const body: ProductCreate = {
         name: barcodeResult.product.name,
+        bereich: schluessel,
         barcode: barcodeResult.product.barcode,
         category: barcodeResult.product.category ?? undefined,
         default_unit: barcodeResult.product.default_unit ?? 'g',
@@ -87,14 +90,14 @@ export default function EinbuchenPage() {
         product_id: product.id,
         quantity,
         unit,
-        location,
+        platz_id: platzId,
       };
       if (mhd) body.mhd = mhd;
       await api.post('/stock', body);
       setToast({ msg: `${product.name} eingebucht`, type: 'success' });
       setTimeout(() => {
         setToast(null);
-        navigate('/bestand');
+        navigate(weg(schluessel, 'bestand'));
       }, 1200);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Fehler beim Einbuchen';
@@ -107,7 +110,7 @@ export default function EinbuchenPage() {
 
   return (
     <div className="page">
-      <h1 className="page-title">Einbuchen</h1>
+      <Kopf titel="Einbuchen" />
 
       {toast && <div className={`toast ${toast.type}`}>{toast.msg}</div>}
 
@@ -115,6 +118,7 @@ export default function EinbuchenPage() {
         <div className="form-group">
           <label className="form-label">Produkt</label>
           <ProductSelect
+            bereich={schluessel}
             onSelect={handleSelectProduct}
             placeholder={preselectedName || 'Produkt suchen...'}
           />
@@ -173,7 +177,7 @@ export default function EinbuchenPage() {
             />
 
             <div className="form-group" style={{ marginTop: 16 }}>
-              <label className="form-label">MHD</label>
+              <label className="form-label">{fristName(bereich)}</label>
               <input
                 type="date"
                 className="form-input"
@@ -182,20 +186,7 @@ export default function EinbuchenPage() {
               />
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Lagerort</label>
-              <select
-                className="form-select"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-              >
-                {LOCATIONS.map((l) => (
-                  <option key={l} value={l}>
-                    {l}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <PlatzWahl wert={platzId} onWahl={setPlatzId} />
 
             <button
               type="submit"

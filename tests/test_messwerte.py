@@ -13,7 +13,7 @@ import pytest
 from prometheus_client import CollectorRegistry, generate_latest
 
 from app.messwerte import LagerSammler, registriere
-from app.models import ConsumptionEvent, ElectronicAsset, Product, StockEntry
+from app.models import ConsumptionEvent, Sache, Product, StockEntry
 from tests.conftest import TEST_ENGINE
 
 
@@ -51,7 +51,7 @@ def test_altersmetrik_erscheint_mit_der_ersten_buchung(sammler, db_session):
     p = Product(name="Reis", default_unit="g")
     db_session.add(p)
     db_session.flush()
-    e = StockEntry(product_id=p.id, quantity=500, unit="g", location="Lager")
+    e = StockEntry(product_id=p.id, quantity=500, unit="g")
     db_session.add(e)
     db_session.flush()
     db_session.add(
@@ -77,13 +77,13 @@ def test_abgelaufene_und_mhd_lose_posten_werden_getrennt_gezaehlt(sammler, db_se
     db_session.add(p)
     db_session.flush()
     db_session.add_all([
-        StockEntry(product_id=p.id, quantity=1, unit="g", location="L",
+        StockEntry(product_id=p.id, quantity=1, unit="g",
                    mhd=date.today() - timedelta(days=5)),
-        StockEntry(product_id=p.id, quantity=1, unit="g", location="L",
+        StockEntry(product_id=p.id, quantity=1, unit="g",
                    mhd=date.today() + timedelta(days=5)),
-        StockEntry(product_id=p.id, quantity=1, unit="g", location="L", mhd=None),
+        StockEntry(product_id=p.id, quantity=1, unit="g", mhd=None),
         # Aufgebraucht: zaehlt in keiner der drei Zahlen mit.
-        StockEntry(product_id=p.id, quantity=0, unit="g", location="L",
+        StockEntry(product_id=p.id, quantity=0, unit="g",
                    mhd=date.today() - timedelta(days=5)),
     ])
     db_session.commit()
@@ -133,7 +133,7 @@ def test_keine_namen_und_keine_kennungen_in_der_ausgabe(db_session):
     )
     db_session.add(p)
     db_session.flush()
-    db_session.add(ElectronicAsset(name="Geheimes Geraet", owner_sub="geheime-kennung-123"))
+    db_session.add(Sache(name="Geheimes Geraet", kennung="S-0001", owner_sub="geheime-kennung-123"))
     db_session.commit()
 
     registry = CollectorRegistry()

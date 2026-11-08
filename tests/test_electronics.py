@@ -70,27 +70,71 @@ def test_duplicate_serial_is_rejected(client):
     assert resp.status_code == 422
 
 
-def test_homelab_active_asset_is_protected_from_sale(client):
+def test_alter_aktiver_usage_status_wird_im_einsatz_und_schuetzt(client):
+    # Alte Form (vor Stufe 3): usage_status critical. Homelab-Felder werden ignoriert.
     resp = client.post("/api/electronics", json={
         "name": "Intel NUC fuer Home Assistant",
-        "category": "Homelab Host",
+        "category": "Mini-PC",
         "purchase_price": 100.0,
         "estimated_resale_value": 220.0,
         "usage_status": "critical",
-        "homelab_role": "homeassistant",
         "host_name": "ha-node",
-        "service_refs": ["homeassistant", "mqtt"],
     })
 
     assert resp.status_code == 201
     data = resp.json()
     assert data["sell_decision"] == "behalten"
     assert data["in_active_use"] is True
-    assert data["service_refs"] == ["homeassistant", "mqtt"]
-    assert "Aktiv in Verwendung" in data["sell_reason"]
+    assert data["verbleib"] == "shopfloor"
+    assert data["shopfloor_grund"] == "im_einsatz"
+    assert data["usage_status"] == "daily_use"
+    assert "host_name" not in data
+    assert data["sell_reason"] == "Im Einsatz"
 
     candidates = client.get("/api/electronics/sell-candidates").json()
     assert candidates == []
+
+
+def test_zurueck_an_den_platz_hebt_den_schutz_auf(client):
+    raum = client.post("/api/plaetze", json={"name": "Keller", "art": "raum"}).json()
+    sid = client.post("/api/electronics", json={
+        "name": "Laptop", "shopfloor_grund": "im_einsatz", "platz_id": raum["id"],
+    }).json()["id"]
+    resp = client.put(f"/api/electronics/{sid}", json={"verbleib": "eingelagert"})
+    assert resp.status_code == 200
+    d = resp.json()
+    assert d["verbleib"] == "eingelagert"
+    assert d["shopfloor_grund"] is None
+    assert d["in_active_use"] is False
+    assert d["location"] == "Keller"
+    assert d["platz_kennung"] == "L-001"
+
+
+def test_einlagern_ohne_platz_wird_abgelehnt(client):
+    sid = client.post("/api/electronics", json={"name": "Kamera"}).json()["id"]
+    resp = client.put(f"/api/electronics/{sid}", json={"verbleib": "eingelagert"})
+    assert resp.status_code == 422
+
+
+def test_verliehen_gibt_es_erst_mit_stufe_7(client):
+    sid = client.post("/api/electronics", json={"name": "Bohrer"}).json()["id"]
+    resp = client.put(f"/api/electronics/{sid}", json={"verbleib": "verliehen"})
+    assert resp.status_code == 422
+
+
+def test_platz_zuweisen_lagert_ein(client):
+    raum = client.post("/api/plaetze", json={"name": "Arbeitszimmer", "art": "raum"}).json()
+    sid = client.post("/api/electronics", json={"name": "Monitor"}).json()["id"]
+    d = client.put(f"/api/electronics/{sid}", json={"platz_id": raum["id"]}).json()
+    assert d["verbleib"] == "eingelagert"
+    # Und zurueck auf den Shopfloor mit Grund: der Platz bleibt stehen.
+    d = client.put(f"/api/electronics/{sid}", json={"shopfloor_grund": "reparatur"}).json()
+    assert d["verbleib"] == "shopfloor"
+    assert d["platz_id"] == raum["id"]
+    # Platz und ausdruecklich „noch nicht eingelagert": bleibt auf dem Shopfloor.
+    d = client.put(f"/api/electronics/{sid}", json={"platz_id": raum["id"],
+                                                     "shopfloor_grund": None}).json()
+    assert (d["verbleib"], d["shopfloor_grund"]) == ("shopfloor", None)
 
 
 def test_electronics_search_by_name_brand_model(client):
@@ -124,12 +168,3 @@ def test_electronics_filter_combinations(client):
     assert page["items"][0]["name"] == "Router A"
 
 
-def test_seed_known_homelab_assets(client):
-    resp = client.post("/api/electronics/homelab/seed-known")
-
-    assert resp.status_code == 200
-    rows = resp.json()
-    hosts = {row["host_name"]: row for row in rows}
-    assert hosts["host"]["sell_decision"] == "behalten"
-    assert hosts["host"]["manual_pin"] is True
-    assert hosts["node1"]["in_active_use"] is True

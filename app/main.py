@@ -17,8 +17,12 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app import messwerte
 from app.api.routes_barcode import router as barcode_router
+from app.api.routes_bereiche import router as bereiche_router
 from app.api.routes_consume import router as consume_router
 from app.api.routes_electronics import router as electronics_router
+from app.api.routes_laeufe import router as laeufe_router
+from app.api.routes_plaetze import router as plaetze_router
+from app.api.routes_preise import router as preise_router
 from app.api.routes_products import router as products_router
 from app.api.routes_shopping import router as shopping_router
 from app.api.routes_stats import critical_router, router as stats_router
@@ -225,6 +229,18 @@ app.include_router(stats_router)
 app.include_router(critical_router)
 app.include_router(electronics_router)
 app.include_router(shopping_router)
+app.include_router(bereiche_router)
+app.include_router(plaetze_router)
+app.include_router(laeufe_router)
+app.include_router(preise_router)
+
+
+@app.on_event("startup")
+def _medien_spiegel_starten() -> None:
+    # Einmal sofort, dann im Takt (app/services/medien.py). Ohne Anbindung nichts.
+    from app.services import medien
+
+    medien.starten()
 
 # Prometheus /metrics: muss vor dem SPA-Catchall registriert werden.
 Instrumentator().instrument(app).expose(

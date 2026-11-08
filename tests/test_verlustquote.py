@@ -35,7 +35,7 @@ def _produkt(db, name: str, kategorie: str, einheit: str = "g") -> Product:
 
 def _posten(db, produkt: Product, menge: float, einheit: str = "g", mhd=None) -> StockEntry:
     e = StockEntry(
-        product_id=produkt.id, quantity=menge, unit=einheit, mhd=mhd, location="Lager"
+        product_id=produkt.id, quantity=menge, unit=einheit, mhd=mhd
     )
     db.add(e)
     db.flush()
